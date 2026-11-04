@@ -1,0 +1,41 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "Rz-coder8848/moonsign/pem"
+
+import {
+  "Rz-coder8848/moonsign/der",
+  "Rz-coder8848/moonsign/x509",
+}
+
+// Values
+pub fn parse_certificates(String) -> Array[@x509.Certificate] raise PemError
+
+pub fn parse_pem(String) -> Array[PemBlock] raise PemError
+
+pub fn parse_private_key(Bytes) -> PrivateKey raise PemError
+
+// Errors
+pub(all) suberror PemError {
+  NoBlock
+  InvalidBase64
+  Der(@der.DerError)
+  X509(@x509.X509Error)
+  UnknownKey(String)
+  UnsupportedCurve(String)
+  NotPrivateKey
+}
+pub fn PemError::message(Self) -> String
+
+// Types and methods
+pub(all) struct PemBlock {
+  label : String
+  der : Bytes
+}
+
+pub(all) enum PrivateKey {
+  Rsa(Bytes, Bytes)
+  EcdsaP256(Bytes)
+}
+
+// Type aliases
+
+// Traits

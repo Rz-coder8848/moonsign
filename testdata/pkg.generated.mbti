@@ -6,6 +6,8 @@ pub fn bytes_of_hex(String) -> Bytes
 
 pub let ec_cert_der_hex : String
 
+pub let ec_key_der_hex : String
+
 pub let ec_priv_hex : String
 
 pub let fixture_message_hex : String
@@ -21,6 +23,8 @@ pub let rsa_cert_der_hex : String
 pub let rsa_d_hex : String
 
 pub let rsa_e_hex : String
+
+pub let rsa_key_der_hex : String
 
 pub let rsa_n_hex : String
 

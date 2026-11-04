@@ -28,4 +28,5 @@ description = "Pure-MoonBit PAdES/CMS PDF signing and verification"
 import {
   "moonbitlang/pdflite@0.4.1",
   "cc06b/mooncry@0.95.0",
+  "moonbitlang/x@0.5.6",
 }
