@@ -38,13 +38,16 @@ def validate(path: str) -> int:
 
 
 def sign(source: str, output: str, key: str, cert: str) -> int:
+    from pyhanko.pdf_utils.incremental_writer import IncrementalPdfFileWriter
     from pyhanko.sign import PdfSignatureMetadata, SimpleSigner
     from pyhanko.sign.signers.pdf_signer import PdfSigner
 
     signer = SimpleSigner.load(key, cert)
     metadata = PdfSignatureMetadata(field_name="Signature1", md_algorithm="sha256")
-    with open(source, "rb") as infile, open(output, "wb") as outfile:
-        PdfSigner(metadata, signer=signer).sign_pdf(infile, outfile)
+    with open(source, "rb") as infile:
+        writer = IncrementalPdfFileWriter(infile)
+        with open(output, "wb") as outfile:
+            PdfSigner(metadata, signer=signer).sign_pdf(writer, outfile)
     print(f"pyHanko signed {source} -> {output}")
     return 0
 
