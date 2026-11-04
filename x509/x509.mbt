@@ -191,3 +191,14 @@ pub fn Certificate::ec_public_key(self : Certificate) -> Bytes? {
   }
   Some(self.public_key_bits)
 }
+
+///|
+/// Human-readable description of an X.509 error.
+pub fn X509Error::message(self : X509Error) -> String {
+  match self {
+    Der(detail) => "DER error: \{detail.message()}"
+    NotACertificate => "input is not an X.509 certificate"
+    MissingField(field) => "missing or malformed field: \{field}"
+    BadPublicKey => "malformed public key"
+  }
+}

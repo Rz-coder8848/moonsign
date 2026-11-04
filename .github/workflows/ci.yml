@@ -47,3 +47,20 @@ jobs:
       - uses: ./.github/actions/setup-moonbit
       - name: Test
         run: moon test --target ${{ matrix.target }}
+
+  interop:
+    name: interop (OpenSSL)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-moonbit
+      - name: CMS built by MoonSign verifies with OpenSSL
+        run: |
+          moon run --target wasm-gc cmd/cmsprobe | grep '^HEX:' | cut -d: -f2 | xxd -r -p > cms.der
+          openssl cms -verify -binary -inform DER -in cms.der \
+            -content testdata/certs/message.bin -noverify -out /dev/null
+      - name: PDF signature built by MoonSign verifies with OpenSSL
+        run: |
+          moon run --target wasm-gc cmd/signprobe | grep '^PDF:' | cut -d: -f2 | xxd -r -p > signed.pdf
+          python3 scripts/verify_pdf_signature.py signed.pdf

@@ -41,6 +41,7 @@ pub(all) suberror CmsError {
   SignatureInvalid
   Malformed(String)
 }
+pub fn CmsError::message(Self) -> String
 
 // Types and methods
 pub(all) struct AlgorithmIdentifier {

@@ -1,0 +1,46 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "Rz-coder8848/moonsign/pades"
+
+import {
+  "Rz-coder8848/moonsign/cms",
+  "Rz-coder8848/moonsign/crypto",
+  "Rz-coder8848/moonsign/pdf",
+  "Rz-coder8848/moonsign/x509",
+}
+
+// Values
+pub fn default_sign_options() -> SignOptions
+
+pub fn sign_pdf(Bytes, SigningKey, @x509.Certificate, Array[Bytes], SignOptions) -> Bytes raise PadesError
+
+pub fn verify_pdf(Bytes, @x509.Certificate) -> Bool raise PadesError
+
+// Errors
+pub(all) suberror PadesError {
+  Pdf(@pdf.PdfSignError)
+  Cms(@cms.CmsError)
+  Crypto(@crypto.CryptoError)
+  X509(@x509.X509Error)
+  NoSignature
+  UnsupportedSubfilter(String)
+  UnsupportedDigest(String)
+  ByteRangeMismatch
+}
+pub fn PadesError::message(Self) -> String
+
+// Types and methods
+pub(all) struct SignOptions {
+  field_name : String
+  contents_chars : Int32
+  signing_time : Int64?
+  hash : @crypto.Hash
+}
+
+pub(all) enum SigningKey {
+  Rsa(Bytes, Bytes)
+  EcdsaP256(Bytes)
+}
+
+// Type aliases
+
+// Traits

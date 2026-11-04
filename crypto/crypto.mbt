@@ -198,3 +198,56 @@ fn copy_padded(value : Bytes, out : Array[Byte], dst_offset : Int32) -> Bool {
   }
   true
 }
+
+///|
+/// Compute a digest over a sequence of byte slices without concatenating them.
+pub fn digest_parts(hash : Hash, parts : Array[Bytes]) -> Bytes {
+  match hash {
+    Sha1 => {
+      let hasher = @mooncry.sha1_new()
+      for part in parts {
+        @mooncry.sha1_update(hasher, part)
+      }
+      @mooncry.sha1_finalize(hasher)
+    }
+    Sha256 => {
+      let hasher = @mooncry.sha256_new()
+      for part in parts {
+        @mooncry.sha256_update(hasher, part)
+      }
+      @mooncry.sha256_finalize(hasher)
+    }
+    Sha384 => {
+      let hasher = @mooncry.sha384_new()
+      for part in parts {
+        @mooncry.sha384_update(hasher, part)
+      }
+      @mooncry.sha384_finalize(hasher)
+    }
+    Sha512 => {
+      let hasher = @mooncry.sha512_new()
+      for part in parts {
+        @mooncry.sha512_update(hasher, part)
+      }
+      @mooncry.sha512_finalize(hasher)
+    }
+    Sm3 => {
+      let hasher = @mooncry.sm3_new()
+      for part in parts {
+        @mooncry.sm3_update(hasher, part)
+      }
+      @mooncry.sm3_finalize(hasher)
+    }
+  }
+}
+
+///|
+/// Human-readable description of a crypto adapter error.
+pub fn CryptoError::message(self : CryptoError) -> String {
+  match self {
+    UnsupportedHash(detail) => "unsupported hash: \{detail}"
+    UnsupportedSignature(detail) => "unsupported signature: \{detail}"
+    InvalidKey(detail) => "invalid key: \{detail}"
+    InvalidSignatureEncoding => "invalid signature encoding"
+  }
+}

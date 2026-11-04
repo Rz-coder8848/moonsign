@@ -1,0 +1,48 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "Rz-coder8848/moonsign/pdf"
+
+// Values
+pub fn bytes_for_signature(Bytes, PdfSignature) -> Array[Bytes]?
+
+pub fn embed(Bytes, SignatureSlot, Bytes) -> Bytes raise PdfSignError
+
+pub fn locate(Bytes, Int32) -> SignatureSlot raise PdfSignError
+
+pub fn prepare(Bytes, String, Int32) -> Bytes raise PdfSignError
+
+pub fn seal_layout(Bytes, Int32) -> (Bytes, SignatureSlot) raise PdfSignError
+
+pub fn signatures(Bytes) -> Array[PdfSignature] raise PdfSignError
+
+pub fn signed_ranges(Bytes, SignatureSlot) -> Array[Bytes]
+
+// Errors
+pub(all) suberror PdfSignError {
+  PdfFailure(String)
+  Encrypted
+  NoPages
+  Malformed(String)
+  PlaceholderMissing
+  PlaceholderTooSmall(Int32, Int32)
+  OffsetTooLarge(Int32)
+}
+pub fn PdfSignError::message(Self) -> String
+
+// Types and methods
+pub(all) struct PdfSignature {
+  field_name : String
+  subfilter : String
+  byte_range : Array[Int32]
+  contents : Bytes
+}
+
+pub(all) struct SignatureSlot {
+  open_pos : Int32
+  close_pos : Int32
+  byte_range_pos : Int32
+  capacity : Int32
+}
+
+// Type aliases
+
+// Traits

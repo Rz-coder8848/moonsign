@@ -53,3 +53,22 @@ pub(all) struct SignedData {
   certificates : Array[Bytes]
   signer_infos : Array[SignerInfo]
 }
+
+///|
+/// Human-readable description of a CMS error.
+pub fn CmsError::message(self : CmsError) -> String {
+  match self {
+    Der(detail) => "DER error: \{detail.message()}"
+    X509(detail) => "X.509 error: \{detail.message()}"
+    Crypto(detail) => "crypto error: \{detail.message()}"
+    NotSignedData => "content is not CMS SignedData"
+    MissingField(field) => "missing CMS field: \{field}"
+    UnsupportedVersion(version) => "unsupported CMS version: \{version}"
+    UnsupportedDigest(oid) => "unsupported digest algorithm: \{oid}"
+    UnsupportedSignature(oid) => "unsupported signature algorithm: \{oid}"
+    NoSigner => "CMS has no signer"
+    DigestMismatch => "message digest does not match"
+    SignatureInvalid => "signature invalid"
+    Malformed(detail) => "malformed CMS: \{detail}"
+  }
+}

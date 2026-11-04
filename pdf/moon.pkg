@@ -1,0 +1,6 @@
+import {
+  "moonbitlang/pdflite",
+  "moonbitlang/pdflite/core" @pdfcore,
+  "moonbitlang/pdflite/syntax" @pdfsyntax,
+  "moonbitlang/core/encoding/utf8",
+}

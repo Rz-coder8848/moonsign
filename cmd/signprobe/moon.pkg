@@ -1,0 +1,9 @@
+import {
+  "Rz-coder8848/moonsign/crypto",
+  "Rz-coder8848/moonsign/pades",
+  "Rz-coder8848/moonsign/testdata" @fixtures,
+  "Rz-coder8848/moonsign/x509",
+  "moonbitlang/pdflite",
+}
+
+pkgtype(kind: "executable")

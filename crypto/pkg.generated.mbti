@@ -4,6 +4,8 @@ package "Rz-coder8848/moonsign/crypto"
 // Values
 pub fn digest(Hash, Bytes) -> Bytes
 
+pub fn digest_parts(Hash, Array[Bytes]) -> Bytes
+
 pub fn sign_ecdsa_p256(Hash, Bytes, Bytes) -> Bytes raise CryptoError
 
 pub fn sign_rsa_pkcs1(Hash, Bytes, Bytes, Bytes) -> Bytes raise CryptoError
@@ -19,6 +21,7 @@ pub(all) suberror CryptoError {
   InvalidKey(String)
   InvalidSignatureEncoding
 }
+pub fn CryptoError::message(Self) -> String
 
 // Types and methods
 pub(all) enum Hash {

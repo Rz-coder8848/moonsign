@@ -1,0 +1,179 @@
+///|
+/// Errors raised by the PAdES orchestration layer.
+pub(all) suberror PadesError {
+  Pdf(@pdf.PdfSignError)
+  Cms(@cms.CmsError)
+  Crypto(@crypto.CryptoError)
+  X509(@x509.X509Error)
+  NoSignature
+  UnsupportedSubfilter(String)
+  UnsupportedDigest(String)
+  ByteRangeMismatch
+}
+
+///|
+/// Signing key material. Keys are raw big-endian scalars/moduli, as parsed by
+/// the caller (for example from PKCS#8).
+pub(all) enum SigningKey {
+  /// RSA: modulus, private exponent.
+  Rsa(Bytes, Bytes)
+  /// ECDSA P-256: 32-byte private scalar.
+  EcdsaP256(Bytes)
+}
+
+///|
+/// Options for `sign_pdf`.
+pub(all) struct SignOptions {
+  field_name : String
+  contents_chars : Int32
+  signing_time : Int64?
+  hash : @crypto.Hash
+}
+
+///|
+/// Default options: field `Signature1`, 8192 bytes of CMS capacity, SHA-256.
+pub fn default_sign_options() -> SignOptions {
+  {
+    field_name: "Signature1",
+    contents_chars: 16384,
+    signing_time: None,
+    hash: @crypto.Hash::Sha256,
+  }
+}
+
+///|
+fn signature_oid_for_rsa(hash : @crypto.Hash) -> String raise PadesError {
+  match hash {
+    Sha1 => @oids.sha1_with_rsa
+    Sha256 => @oids.sha256_with_rsa
+    Sha384 => @oids.sha384_with_rsa
+    Sha512 => @oids.sha512_with_rsa
+    Sm3 => raise PadesError::UnsupportedDigest("SM3 with RSA is not supported")
+  }
+}
+
+///|
+fn signature_oid_for_ecdsa(hash : @crypto.Hash) -> String raise PadesError {
+  match hash {
+    Sha256 => @oids.ecdsa_with_sha256
+    Sha384 => @oids.ecdsa_with_sha384
+    Sha512 => @oids.ecdsa_with_sha512
+    _ => raise PadesError::UnsupportedDigest("ECDSA P-256 uses SHA-256")
+  }
+}
+
+///|
+/// Sign a PDF with PAdES B-B (detached CMS, `ETSI.CAdES.detached`).
+pub fn sign_pdf(
+  pdf_bytes : Bytes,
+  key : SigningKey,
+  certificate : @x509.Certificate,
+  extra_certs : Array[Bytes],
+  options : SignOptions,
+) -> Bytes raise PadesError {
+  let prepared = @pdf.prepare(
+    pdf_bytes,
+    options.field_name,
+    options.contents_chars,
+  ) catch {
+    e => raise PadesError::Pdf(e)
+  }
+  let (sealed_pdf, slot) = @pdf.seal_layout(prepared, options.contents_chars) catch {
+    e => raise PadesError::Pdf(e)
+  }
+  let parts = @pdf.signed_ranges(sealed_pdf, slot)
+  let digest = @crypto.digest_parts(options.hash, parts)
+  let signed_attrs = @cms.build_signed_attrs(
+    @oids.id_data,
+    digest,
+    options.signing_time,
+    certificate,
+    options.hash,
+  )
+  let (signature, signature_oid) = match key {
+    Rsa(modulus, private_exponent) => {
+      let value = @crypto.sign_rsa_pkcs1(
+        options.hash,
+        signed_attrs,
+        modulus,
+        private_exponent,
+      ) catch {
+        e => raise PadesError::Crypto(e)
+      }
+      (value, signature_oid_for_rsa(options.hash))
+    }
+    EcdsaP256(private_key) => {
+      let value = @crypto.sign_ecdsa_p256(
+        options.hash,
+        signed_attrs,
+        private_key,
+      ) catch {
+        e => raise PadesError::Crypto(e)
+      }
+      (value, signature_oid_for_ecdsa(options.hash))
+    }
+  }
+  let cms_bytes = @cms.assemble_signed_data(
+    signed_attrs,
+    signature,
+    options.hash,
+    signature_oid,
+    certificate,
+    extra_certs,
+    @oids.id_data,
+  )
+  @pdf.embed(sealed_pdf, slot, cms_bytes) catch {
+    e => raise PadesError::Pdf(e)
+  }
+}
+
+///|
+/// Verify the first signature of a PDF against a known certificate.
+///
+/// This checks the byte ranges, the CMS message digest and the signature. It
+/// does not build a certificate chain; callers that need trust decisions must
+/// check the certificate themselves.
+pub fn verify_pdf(
+  pdf_bytes : Bytes,
+  certificate : @x509.Certificate,
+) -> Bool raise PadesError {
+  let signatures = @pdf.signatures(pdf_bytes) catch {
+    e => raise PadesError::Pdf(e)
+  }
+  if signatures.length() == 0 {
+    raise PadesError::NoSignature
+  }
+  let signature = signatures[0]
+  let parts = match @pdf.bytes_for_signature(pdf_bytes, signature) {
+    Some(value) => value
+    None => raise PadesError::ByteRangeMismatch
+  }
+  let signed_data = @cms.parse_signed_data(signature.contents) catch {
+    e => raise PadesError::Cms(e)
+  }
+  if signed_data.signer_infos.length() == 0 {
+    raise PadesError::NoSignature
+  }
+  let signer = signed_data.signer_infos[0]
+  let hash = match @crypto.Hash::from_oid(signer.digest_oid) {
+    Some(value) => value
+    None => raise PadesError::UnsupportedDigest(signer.digest_oid)
+  }
+  let digest = @crypto.digest_parts(hash, parts)
+  @cms.verify_signer(signer, certificate, digest)
+}
+
+///|
+/// Human-readable description of a PAdES error.
+pub fn PadesError::message(self : PadesError) -> String {
+  match self {
+    Pdf(detail) => "PDF error: \{detail.message()}"
+    Cms(detail) => "CMS error: \{detail.message()}"
+    Crypto(detail) => "crypto error: \{detail.message()}"
+    X509(detail) => "X.509 error: \{detail.message()}"
+    NoSignature => "no signature found"
+    UnsupportedSubfilter(value) => "unsupported subfilter: \{value}"
+    UnsupportedDigest(value) => "unsupported digest: \{value}"
+    ByteRangeMismatch => "signature ByteRange is malformed"
+  }
+}
