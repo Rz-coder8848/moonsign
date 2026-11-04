@@ -1,0 +1,8 @@
+import {
+  "Rz-coder8848/moonsign/der",
+  "Rz-coder8848/moonsign/oids",
+}
+
+import {
+  "Rz-coder8848/moonsign/testdata" @fixtures,
+} for "test"
