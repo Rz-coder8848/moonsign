@@ -1,0 +1,49 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: lint (fmt + check + interface)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-moonbit
+      - name: Format check
+        run: moon fmt --check
+      - name: Type check (warnings are errors)
+        run: moon check --deny-warn
+      - name: Generated interface is committed
+        run: |
+          moon info
+          git diff --exit-code
+
+  test:
+    name: test (${{ matrix.os }} / ${{ matrix.target }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: native
+          - os: ubuntu-latest
+            target: wasm-gc
+          - os: macos-latest
+            target: native
+          - os: windows-latest
+            target: native
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-moonbit
+      - name: Test
+        run: moon test --target ${{ matrix.target }}

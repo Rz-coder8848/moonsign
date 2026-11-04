@@ -1,0 +1,72 @@
+name: Set up MoonBit
+
+description: >
+  Install the MoonBit toolchain from the official channel installer and make
+  `moon` available on PATH.
+
+inputs:
+  channel:
+    description: 'Release channel: "latest" (stable) or "nightly".'
+    required: false
+    default: latest
+
+runs:
+  using: composite
+  steps:
+    - name: Install MoonBit (Unix)
+      if: runner.os != 'Windows'
+      shell: bash
+      env:
+        MOONBIT_CHANNEL: ${{ inputs.channel }}
+      run: |
+        set -euo pipefail
+        case "$MOONBIT_CHANNEL" in
+          latest|nightly) ;;
+          *) echo "unsupported channel: $MOONBIT_CHANNEL" >&2; exit 1 ;;
+        esac
+        root="$RUNNER_TEMP/moonbit-toolchain"
+        # The installer expects a fresh root.
+        test ! -e "$root"
+        mkdir -m 0700 "$root"
+        curl -fsSL https://cli.moonbitlang.com/install/unix.sh -o "$RUNNER_TEMP/install-moonbit.sh"
+        if [ "$MOONBIT_CHANNEL" = "latest" ]; then
+          MOON_HOME="$root" bash "$RUNNER_TEMP/install-moonbit.sh"
+        else
+          MOON_HOME="$root" bash "$RUNNER_TEMP/install-moonbit.sh" "$MOONBIT_CHANNEL"
+        fi
+        rm -f "$RUNNER_TEMP/install-moonbit.sh"
+        echo "MOON_HOME=$root" >> "$GITHUB_ENV"
+        echo "$root/bin" >> "$GITHUB_PATH"
+
+    - name: Install MoonBit (Windows)
+      if: runner.os == 'Windows'
+      shell: pwsh
+      env:
+        MOONBIT_CHANNEL: ${{ inputs.channel }}
+      run: |
+        $ErrorActionPreference = "Stop"
+        if ($env:MOONBIT_CHANNEL -notin @("latest", "nightly")) {
+          throw "unsupported channel: $env:MOONBIT_CHANNEL"
+        }
+        $root = Join-Path $env:RUNNER_TEMP "moonbit-toolchain"
+        if (Test-Path -LiteralPath $root) {
+          throw "install root must be absent"
+        }
+        New-Item -Path $root -ItemType Directory | Out-Null
+        $env:MOON_HOME = $root
+        $env:MOONBIT_INSTALL_VERSION = $env:MOONBIT_CHANNEL
+        $installer = Join-Path $env:RUNNER_TEMP "install-moonbit.ps1"
+        Invoke-WebRequest -Uri "https://cli.moonbitlang.com/install/powershell.ps1" -OutFile $installer
+        & powershell -ExecutionPolicy Bypass -File $installer
+        if ($LASTEXITCODE -ne 0) { throw "MoonBit installation failed" }
+        Remove-Item $installer -Force
+        "MOON_HOME=$root" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+        "$root\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+
+    - name: Show toolchain versions
+      shell: bash
+      run: moon version --all
+
+    - name: Fetch registry index
+      shell: bash
+      run: moon update

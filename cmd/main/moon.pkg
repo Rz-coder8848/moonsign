@@ -1,0 +1,5 @@
+// import {
+//   "Rz-coder8848/moonsign" @lib,
+// }
+
+pkgtype(kind: "executable")
