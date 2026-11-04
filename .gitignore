@@ -4,3 +4,16 @@ target/
 target
 .mooncakes/
 .moonagent/
+
+# Local smoke-test output
+*.signed.pdf
+blank.pdf
+signed.pdf
+cms.der
+key.pem
+cert.pem
+err.txt
+fmt.txt
+info.txt
+check.txt
+test.txt
