@@ -131,6 +131,29 @@ fn scan_hex_string(pdf : Bytes, pos : Int32) -> (Bytes, Int32)? {
 }
 
 ///|
+/// Find the last occurrence of `needle` that starts before `before`, scanning
+/// back at most 4096 bytes.
+/// back at most 4096 bytes.
+fn scan_rfind(haystack : Bytes, needle : Bytes, before : Int32) -> Int32? {
+  let start = if before > 4096 { before - 4096 } else { 0 }
+  let mut found : Int32? = None
+  let mut position = start
+  while position < before {
+    match scan_find(haystack, needle, position) {
+      Some(index) =>
+        if index < before {
+          found = Some(index)
+          position = index + 1
+        } else {
+          break
+        }
+      None => break
+    }
+  }
+  found
+}
+
+///|
 /// Find signatures by scanning PDF bytes instead of walking the xref.
 ///
 /// This is a fallback for documents whose incremental revisions are not
@@ -156,9 +179,17 @@ pub fn signatures_scan(pdf : Bytes) -> Array[PdfSignature] {
     if ranges.length() != 4 {
       continue
     }
-    let contents_pos = match scan_find(pdf, contents_key, after_array) {
-      Some(index) => if index - after_array > 4096 { continue } else { index }
-      None => continue
+    let after_pos = match scan_find(pdf, contents_key, after_array) {
+      Some(index) => if index - after_array > 4096 { None } else { Some(index) }
+      None => None
+    }
+    let contents_pos = match after_pos {
+      Some(index) => index
+      None =>
+        match scan_rfind(pdf, contents_key, found) {
+          Some(index) => index
+          None => continue
+        }
     }
     let string_start = scan_skip_space(
       pdf,
