@@ -101,8 +101,19 @@ jobs:
             -days 365 -nodes -subj "/CN=MoonSign CI"
           moon run cmd/moonsign -- sign blank.pdf --out signed.pdf --key key.pem --cert cert.pem
           python3 scripts/pyhanko_check.py validate signed.pdf
-      - name: MoonSign verifies a pyHanko signature
+      - name: Sign a PDF with pyHanko
         run: |
           moon run cmd/mkpdf -- blank-form.pdf --with-field
           python3 scripts/pyhanko_check.py sign blank-form.pdf pyhanko-signed.pdf key.pem cert.pem
-          moon run cmd/moonsign -- verify pyhanko-signed.pdf --cert cert.pem
+      - name: Dump signature markers
+        run: |
+          python3 - <<'PY'
+          data = open("pyhanko-signed.pdf", "rb").read()
+          for marker in (b"/ByteRange", b"/Contents", b"/SubFilter"):
+              index = data.find(marker)
+              print(marker, index)
+              if index >= 0:
+                  print(repr(data[max(0, index - 60):index + 120]))
+          PY
+      - name: MoonSign verifies a pyHanko signature
+        run: moon run cmd/moonsign -- verify pyhanko-signed.pdf --cert cert.pem
