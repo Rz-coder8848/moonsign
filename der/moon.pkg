@@ -1,0 +1,10 @@
+// DER / ASN.1 primitives for MoonSign.
+//
+// This package only depends on the MoonBit core library. It intentionally
+// implements the subset of DER needed by CMS (RFC 5652), X.509 (RFC 5280) and
+// PAdES (ETSI EN 319 142): definite lengths, low-tag-number identifiers,
+// explicit/implicit context tags, DER SET OF ordering, and the time types.
+
+import {
+  "moonbitlang/core/encoding/utf8",
+}

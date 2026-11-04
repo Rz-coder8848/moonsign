@@ -1,0 +1,119 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "Rz-coder8848/moonsign/der"
+
+// Values
+pub fn decode_oid(Bytes) -> String raise DerError
+
+pub fn der_bit_string(Bytes, Int32) -> Bytes
+
+pub fn der_boolean(Bool) -> Bytes
+
+pub fn der_bytes_compare(Bytes, Bytes) -> Int32
+
+pub fn der_bytes_concat(Array[Bytes]) -> Bytes
+
+pub fn der_context(Int32, Bool, Bytes) -> Bytes
+
+pub fn der_context_explicit(Int32, Bytes) -> Bytes
+
+pub fn der_encode(Int32, Bytes) -> Bytes
+
+pub fn der_encode_length(Int32) -> Bytes
+
+pub fn der_generalized_time(Int64) -> Bytes
+
+pub fn der_integer_bytes(Bytes) -> Bytes
+
+pub fn der_integer_int(Int32) -> Bytes
+
+pub fn der_null() -> Bytes
+
+pub fn der_octet_string(Bytes) -> Bytes
+
+pub fn der_oid(Array[Int32]) -> Bytes
+
+pub fn der_oid_parse(String) -> Bytes raise DerError
+
+pub fn der_sequence(Array[Bytes]) -> Bytes
+
+pub fn der_set(Array[Bytes]) -> Bytes
+
+pub fn der_time_auto(Int64) -> Bytes
+
+pub fn der_time_parse(Tlv) -> Int64 raise DerError
+
+pub fn der_utc_time(Int64) -> Bytes
+
+pub fn der_utf8_string(String) -> Bytes
+
+pub let tag_bit_string : Int32
+
+pub let tag_boolean : Int32
+
+pub let tag_generalized_time : Int32
+
+pub let tag_integer : Int32
+
+pub let tag_null : Int32
+
+pub let tag_octet_string : Int32
+
+pub let tag_oid : Int32
+
+pub let tag_sequence : Int32
+
+pub let tag_set : Int32
+
+pub let tag_utc_time : Int32
+
+pub let tag_utf8_string : Int32
+
+// Errors
+pub(all) suberror DerError {
+  UnexpectedEnd(Int32)
+  UnsupportedTag(Int32)
+  InvalidLength(Int32)
+  LengthOverflow(Int32)
+  NonMinimalLength(Int32)
+  InvalidTag(Int32)
+  UnexpectedTag(Int32, Int32)
+  TrailingBytes(Int32)
+  InvalidInteger(Int32)
+  InvalidOid(Int32)
+  InvalidTime(Int32)
+}
+pub fn DerError::message(Self) -> String
+pub fn DerError::offset(Self) -> Int32
+
+// Types and methods
+pub struct DerReader {
+  bytes : Bytes
+  mut pos : Int32
+  limit : Int32
+}
+pub fn DerReader::at(Bytes, Int32, Int32) -> Self raise DerError
+pub fn DerReader::is_empty(Self) -> Bool
+pub fn DerReader::new(Bytes) -> Self
+pub fn DerReader::offset(Self) -> Int32
+pub fn DerReader::peek_tag(Self) -> Int32?
+pub fn DerReader::read_all(Self) -> Array[Tlv] raise DerError
+pub fn DerReader::read_expected(Self, Int32) -> Tlv raise DerError
+pub fn DerReader::read_integer_int(Self) -> Int32 raise DerError
+pub fn DerReader::read_oid(Self) -> String raise DerError
+pub fn DerReader::read_sequence(Self) -> Self raise DerError
+pub fn DerReader::read_set(Self) -> Self raise DerError
+pub fn DerReader::read_tlv(Self) -> Tlv raise DerError
+pub fn DerReader::remaining(Self) -> Int32
+
+pub(all) struct Tlv {
+  tag : Int32
+  content : Bytes
+  raw : Bytes
+}
+pub fn Tlv::is_constructed(Self) -> Bool
+pub fn Tlv::tag_class(Self) -> Int32
+pub fn Tlv::tag_number(Self) -> Int32
+
+// Type aliases
+
+// Traits
