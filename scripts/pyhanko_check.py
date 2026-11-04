@@ -49,7 +49,7 @@ def sign(source: str, output: str, key: str, cert: str) -> int:
     with open(source, "rb") as infile:
         writer = IncrementalPdfFileWriter(infile)
         with open(output, "wb") as outfile:
-            PdfSigner(metadata, signer=signer).sign_pdf(writer, outfile)
+            PdfSigner(metadata, signer=signer).sign_pdf(writer, output=outfile)
     print(f"pyHanko signed {source} -> {output}")
     return 0
 
