@@ -31,7 +31,9 @@ pub fn build_signed_attrs(
     @der.der_sequence([@oids.encode(hash.oid()), @der.der_null()]),
     @der.der_octet_string(cert_hash),
   ])
-  let signing_certificate_v2 = @der.der_sequence([ess_cert_id])
+  // SigningCertificateV2 ::= SEQUENCE { certs SEQUENCE OF ESSCertIDv2, ... }
+  let certs = @der.der_sequence([ess_cert_id])
+  let signing_certificate_v2 = @der.der_sequence([certs])
   attrs.push(
     attribute(@oids.id_signing_certificate_v2, [signing_certificate_v2]),
   )
