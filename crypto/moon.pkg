@@ -1,0 +1,10 @@
+import {
+  "cc06b/mooncry/lib" @mooncry,
+  "Rz-coder8848/moonsign/der",
+  "Rz-coder8848/moonsign/oids",
+}
+
+import {
+  "Rz-coder8848/moonsign/testdata" @fixtures,
+  "Rz-coder8848/moonsign/x509",
+} for "test"

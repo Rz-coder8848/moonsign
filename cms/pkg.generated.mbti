@@ -1,0 +1,78 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "Rz-coder8848/moonsign/cms"
+
+import {
+  "Rz-coder8848/moonsign/crypto",
+  "Rz-coder8848/moonsign/der",
+  "Rz-coder8848/moonsign/x509",
+}
+
+// Values
+pub fn assemble_signed_data(Bytes, Bytes, @crypto.Hash, String, @x509.Certificate, Array[Bytes], String) -> Bytes
+
+pub fn build_signed_attrs(String, Bytes, Int64?, @x509.Certificate, @crypto.Hash) -> Bytes
+
+pub fn parse_signed_data(Bytes) -> SignedData raise CmsError
+
+pub fn signature_algorithm_supported(String) -> Bool
+
+pub fn signed_attrs_from_implicit(Bytes) -> Bytes
+
+pub fn signed_attrs_to_implicit(Bytes) -> Bytes
+
+pub fn signer_certificate(SignedData, SignerInfo) -> @x509.Certificate?
+
+pub fn verify_signed_data(SignedData, @x509.Certificate, Bytes) -> Bool
+
+pub fn verify_signer(SignerInfo, @x509.Certificate, Bytes) -> Bool
+
+// Errors
+pub(all) suberror CmsError {
+  Der(@der.DerError)
+  X509(@x509.X509Error)
+  Crypto(@crypto.CryptoError)
+  NotSignedData
+  MissingField(String)
+  UnsupportedVersion(Int32)
+  UnsupportedDigest(String)
+  UnsupportedSignature(String)
+  NoSigner
+  DigestMismatch
+  SignatureInvalid
+  Malformed(String)
+}
+
+// Types and methods
+pub(all) struct AlgorithmIdentifier {
+  oid : String
+  params_raw : Bytes?
+}
+
+pub(all) struct Attribute {
+  oid : String
+  values : Array[Bytes]
+}
+
+pub(all) struct SignedData {
+  version : Int32
+  content_type : String
+  econtent : Bytes?
+  certificates : Array[Bytes]
+  signer_infos : Array[SignerInfo]
+}
+
+pub(all) struct SignerInfo {
+  version : Int32
+  issuer_raw : Bytes
+  serial_raw : Bytes
+  digest_oid : String
+  signed_attrs_raw : Bytes
+  signed_attrs : Array[Attribute]
+  signature_oid : String
+  signature : Bytes
+  unsigned_attrs_raw : Bytes?
+}
+
+// Type aliases
+
+// Traits

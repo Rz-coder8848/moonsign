@@ -1,0 +1,37 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "Rz-coder8848/moonsign/crypto"
+
+// Values
+pub fn digest(Hash, Bytes) -> Bytes
+
+pub fn sign_ecdsa_p256(Hash, Bytes, Bytes) -> Bytes raise CryptoError
+
+pub fn sign_rsa_pkcs1(Hash, Bytes, Bytes, Bytes) -> Bytes raise CryptoError
+
+pub fn verify_ecdsa_p256(Hash, Bytes, Bytes, Bytes) -> Bool
+
+pub fn verify_rsa_pkcs1(Hash, Bytes, Bytes, Bytes, Bytes) -> Bool
+
+// Errors
+pub(all) suberror CryptoError {
+  UnsupportedHash(String)
+  UnsupportedSignature(String)
+  InvalidKey(String)
+  InvalidSignatureEncoding
+}
+
+// Types and methods
+pub(all) enum Hash {
+  Sha1
+  Sha256
+  Sha384
+  Sha512
+  Sm3
+}
+pub fn Hash::from_oid(String) -> Self?
+pub fn Hash::name(Self) -> String
+pub fn Hash::oid(Self) -> String
+
+// Type aliases
+
+// Traits
