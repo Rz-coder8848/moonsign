@@ -84,3 +84,24 @@ jobs:
           moon run cmd/moonsign -- info signed.pdf
           moon run cmd/moonsign -- sign blank.pdf --out signed-json.pdf --key key.pem --cert cert.pem --json
           python3 scripts/verify_pdf_signature.py signed.pdf
+
+  pyhanko:
+    name: interop (pyHanko)
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-moonbit
+      - name: Install pyHanko
+        run: python3 -m pip install --quiet pyhanko
+      - name: pyHanko validates a MoonSign signature
+        run: |
+          moon run cmd/mkpdf -- blank.pdf
+          openssl req -x509 -newkey rsa:2048 -keyout key.pem -out cert.pem \
+            -days 365 -nodes -subj "/CN=MoonSign CI"
+          moon run cmd/moonsign -- sign blank.pdf --out signed.pdf --key key.pem --cert cert.pem
+          python3 scripts/pyhanko_check.py validate signed.pdf
+      - name: MoonSign verifies a pyHanko signature
+        run: |
+          python3 scripts/pyhanko_check.py sign blank.pdf pyhanko-signed.pdf key.pem cert.pem
+          moon run cmd/moonsign -- verify pyhanko-signed.pdf --cert cert.pem

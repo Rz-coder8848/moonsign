@@ -6,6 +6,8 @@ pub fn bytes_for_signature(Bytes, PdfSignature) -> Array[Bytes]?
 
 pub fn embed(Bytes, SignatureSlot, Bytes) -> Bytes raise PdfSignError
 
+pub fn find_signatures(Bytes) -> Array[PdfSignature]
+
 pub fn locate(Bytes, Int32) -> SignatureSlot raise PdfSignError
 
 pub fn prepare(Bytes, String, Int32) -> Bytes raise PdfSignError
@@ -13,6 +15,8 @@ pub fn prepare(Bytes, String, Int32) -> Bytes raise PdfSignError
 pub fn seal_layout(Bytes, Int32) -> (Bytes, SignatureSlot) raise PdfSignError
 
 pub fn signatures(Bytes) -> Array[PdfSignature] raise PdfSignError
+
+pub fn signatures_scan(Bytes) -> Array[PdfSignature]
 
 pub fn signed_ranges(Bytes, SignatureSlot) -> Array[Bytes]
 

@@ -262,9 +262,7 @@ fn verify_impl(args : Array[String]) -> Unit raise CliError {
   if certs.length() == 0 {
     raise CliError::Failure("no CERTIFICATE block found in " + cert_path)
   }
-  let signatures = @pdf.signatures(pdf_bytes) catch {
-    e => raise CliError::Failure(e.message())
-  }
+  let signatures = @pdf.find_signatures(pdf_bytes)
   if signatures.length() == 0 {
     raise CliError::Failure("no signature found in " + input)
   }
@@ -305,9 +303,7 @@ fn info_impl(args : Array[String]) -> Unit raise CliError {
   let options = parse_options(args)
   let input = require(options.input, "input PDF")
   let pdf_bytes = read_bytes(input)
-  let signatures = @pdf.signatures(pdf_bytes) catch {
-    e => raise CliError::Failure(e.message())
-  }
+  let signatures = @pdf.find_signatures(pdf_bytes)
   if options.json {
     let buf = StringBuilder()
     buf.write_string("{\"command\":\"info\",\"signatures\":[")

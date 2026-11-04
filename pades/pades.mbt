@@ -137,9 +137,7 @@ pub fn verify_pdf(
   pdf_bytes : Bytes,
   certificate : @x509.Certificate,
 ) -> Bool raise PadesError {
-  let signatures = @pdf.signatures(pdf_bytes) catch {
-    e => raise PadesError::Pdf(e)
-  }
+  let signatures = @pdf.find_signatures(pdf_bytes)
   if signatures.length() == 0 {
     raise PadesError::NoSignature
   }
