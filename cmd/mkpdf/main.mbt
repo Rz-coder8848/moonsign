@@ -1,34 +1,28 @@
 ///|
-fn nm(value : String) -> @pdfcore.PdfName {
-  @pdfcore.pdf_name_of_bytes(@utf8.encode("/" + value))
-}
-
-///|
 fn main {
   let args = @env.args()
   let mut path = "blank.pdf"
-  if args.length() > 1 {
-    path = args[args.length() - 1]
+  let mut with_field = false
+  for arg in args {
+    if arg == "--with-field" {
+      with_field = true
+    } else {
+      match arg.get_char(0) {
+        Some(c) => if c != '-' { path = arg }
+        None => ()
+      }
+    }
   }
   let document = @pdflite.pdf_minimum_valid_pdf() catch {
     _ => abort("failed to create a minimal PDF")
   }
-  // Add an empty AcroForm so other tools (for example pyHanko) can add fields.
-  let catalog = document.catalog() catch {
-    _ => abort("failed to read the catalog")
+  if with_field {
+    // Add an empty signature field so other tools (for example pyHanko) can
+    // fill it.
+    @pdf.add_empty_signature_field(document, "Signature1") catch {
+      _ => abort("failed to add the signature field")
+    }
   }
-  let acroform = @pdfsyntax.PdfObject::PdfDictionary([
-    (nm("Fields"), @pdfsyntax.PdfObject::PdfArray([])),
-    (nm("SigFlags"), @pdfsyntax.PdfObject::PdfInteger(3)),
-  ])
-  let acroform_number = document.add_object(acroform)
-  let updated_catalog = catalog.add_dict_entry(
-    nm("AcroForm"),
-    @pdfsyntax.PdfObject::PdfIndirect(acroform_number),
-  ) catch {
-    _ => abort("failed to attach the AcroForm")
-  }
-  document.add_object_given_number(document.root(), updated_catalog)
   let bytes = @pdflite.pdf_write_document(document) catch {
     _ => abort("failed to serialize the PDF")
   }

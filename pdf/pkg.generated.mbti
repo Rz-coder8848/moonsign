@@ -1,7 +1,13 @@
 // Generated using `moon info`, DON'T EDIT IT
 package "Rz-coder8848/moonsign/pdf"
 
+import {
+  "moonbitlang/pdflite",
+}
+
 // Values
+pub fn add_empty_signature_field(@pdflite.PdfDocument, String) -> Unit raise PdfSignError
+
 pub fn bytes_for_signature(Bytes, PdfSignature) -> Array[Bytes]?
 
 pub fn embed(Bytes, SignatureSlot, Bytes) -> Bytes raise PdfSignError

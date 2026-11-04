@@ -445,3 +445,36 @@ pub fn PdfSignError::message(self : PdfSignError) -> String {
     OffsetTooLarge(value) => "byte offset too large: \{value}"
   }
 }
+
+///|
+/// Add an empty signature field (no signature value) to a document.
+///
+/// This is useful for interoperability tests: other signers can then fill the
+/// field instead of creating one themselves.
+pub fn add_empty_signature_field(
+  doc : @pdflite.PdfDocument,
+  field_name : String,
+) -> Unit raise PdfSignError {
+  let pages = doc.page_reference_numbers() catch {
+    e => raise PdfSignError::PdfFailure(@pdfcore.pdf_error_summary(e))
+  }
+  if pages.length() == 0 {
+    raise PdfSignError::NoPages
+  }
+  let page_number = pages[0]
+  let field = dict([
+    (name("Type"), name_object("Annot")),
+    (name("Subtype"), name_object("Widget")),
+    (name("FT"), name_object("Sig")),
+    (name("T"), string_object(@utf8.encode(field_name))),
+    (name("F"), int_object(4)),
+    (name("P"), indirect(page_number)),
+    (
+      name("Rect"),
+      array_object([int_object(0), int_object(0), int_object(0), int_object(0)]),
+    ),
+  ])
+  let field_number = doc.add_object(field)
+  append_annotation(doc, page_number, field_number)
+  ensure_acroform(doc, field_number)
+}

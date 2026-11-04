@@ -103,5 +103,6 @@ jobs:
           python3 scripts/pyhanko_check.py validate signed.pdf
       - name: MoonSign verifies a pyHanko signature
         run: |
-          python3 scripts/pyhanko_check.py sign blank.pdf pyhanko-signed.pdf key.pem cert.pem
+          moon run cmd/mkpdf -- blank-form.pdf --with-field
+          python3 scripts/pyhanko_check.py sign blank-form.pdf pyhanko-signed.pdf key.pem cert.pem
           moon run cmd/moonsign -- verify pyhanko-signed.pdf --cert cert.pem
