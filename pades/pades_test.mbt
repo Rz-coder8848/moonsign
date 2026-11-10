@@ -227,9 +227,18 @@ fn fake_tsa_token(request : Bytes) -> Result[Bytes, String] {
   }
   let (oid, hashed) = imprint
   let cert = @x509.parse_certificate(
-    @fixtures.bytes_of_hex(@fixtures.rsa_cert_der_hex),
+    @fixtures.bytes_of_hex(@fixtures.tsa_cert_der_hex),
   ) catch {
     _ => return Err("tsa cert")
+  }
+  let key = @pem.parse_private_key(
+    @fixtures.bytes_of_hex(@fixtures.tsa_key_der_hex),
+  ) catch {
+    _ => return Err("tsa key")
+  }
+  let private_exponent = match key {
+    @pem.PrivateKey::Rsa(_, d) => d
+    _ => return Err("expected an RSA TSA key")
   }
   let tst_info = @der.der_sequence([
     @der.der_integer_int(1),
@@ -251,13 +260,13 @@ fn fake_tsa_token(request : Bytes) -> Result[Bytes, String] {
   )
   let (modulus, _) = match cert.rsa_public_key() {
     Some(pair) => pair
-    None => return Err("tsa key")
+    None => return Err("tsa public key")
   }
   let signature = @crypto.sign_rsa_pkcs1(
     @crypto.Hash::Sha256,
     attrs,
     modulus,
-    @fixtures.bytes_of_hex(@fixtures.rsa_d_hex),
+    private_exponent,
   ) catch {
     e => return Err(e.message())
   }
@@ -313,4 +322,22 @@ test "sign with timestamp (B-T)" {
     ),
     content="true",
   )
+  match @cms.signing_time(signer) {
+    Some(value) => inspect(value.to_string(), content="1794500000")
+    None => fail("missing signing time")
+  }
+  let tsa_cert = @x509.parse_certificate(
+    @fixtures.bytes_of_hex(@fixtures.tsa_cert_der_hex),
+  ) catch {
+    _ => abort("tsa cert")
+  }
+  let timestamp = @pades.verify_timestamp_at(signed, 0, [tsa_cert], 1794500000L) catch {
+    e => abort(e.message())
+  }
+  inspect(timestamp.present, content="true")
+  inspect(timestamp.valid, content="true")
+  match timestamp.chain {
+    Some(chain) => inspect(chain.trusted, content="true")
+    None => fail("expected a TSA chain")
+  }
 }

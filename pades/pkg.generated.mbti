@@ -22,6 +22,8 @@ pub fn verify_pdf_with_anchors(Bytes, Array[@x509.Certificate], Int64) -> Verify
 
 pub fn verify_pdf_with_anchors_and_crls(Bytes, Array[@x509.Certificate], Array[@x509.Crl], Int64) -> VerifyOutcome raise PadesError
 
+pub fn verify_timestamp_at(Bytes, Int32, Array[@x509.Certificate], Int64) -> TimestampOutcome raise PadesError
+
 // Errors
 pub(all) suberror PadesError {
   Pdf(@pdf.PdfSignError)
@@ -50,6 +52,13 @@ pub(all) struct SignOptions {
 pub(all) enum SigningKey {
   Rsa(Bytes, Bytes)
   EcdsaP256(Bytes)
+}
+
+pub(all) struct TimestampOutcome {
+  present : Bool
+  valid : Bool
+  chain : @trust.Chain?
+  error : String?
 }
 
 pub(all) struct VerifyOutcome {

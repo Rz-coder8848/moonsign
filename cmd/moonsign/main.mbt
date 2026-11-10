@@ -37,6 +37,7 @@ fn usage() -> Unit {
   println("  --chain <path>    extra certificates to embed during signing")
   println("  --anchors <path>  trust anchors used to check the signer chain")
   println("  --crl <path>      CRLs (PEM) used to check revocation")
+  println("  --tsa-anchors <path>  trust anchors for the timestamp (B-T)")
   println("  --field <name>    signature field name (default: Signature1)")
   println("  --reason <text>   reason recorded in the signature dictionary")
   println("  --location <text> signing location")
@@ -75,6 +76,7 @@ pub(all) struct CliOptions {
   mut contact : String?
   mut signing_time : String?
   mut response : String?
+  mut tsa_anchors : String?
   mut json : Bool
 }
 
@@ -102,6 +104,7 @@ fn parse_options(args : Array[String]) -> CliOptions raise CliError {
     contact: None,
     signing_time: None,
     response: None,
+    tsa_anchors: None,
     json: false,
   }
   let mut index = 0
@@ -121,7 +124,8 @@ fn parse_options(args : Array[String]) -> CliOptions raise CliError {
       arg == "--location" ||
       arg == "--contact" ||
       arg == "--signing-time" ||
-      arg == "--response" {
+      arg == "--response" ||
+      arg == "--tsa-anchors" {
       if index + 1 >= args.length() {
         raise CliError::Failure("missing value for " + arg)
       }
@@ -148,6 +152,8 @@ fn parse_options(args : Array[String]) -> CliOptions raise CliError {
         options.signing_time = Some(value)
       } else if arg == "--response" {
         options.response = Some(value)
+      } else if arg == "--tsa-anchors" {
+        options.tsa_anchors = Some(value)
       } else {
         options.field = value
       }
@@ -365,6 +371,45 @@ fn parse_unix(text : String) -> Int64 raise CliError {
 }
 
 ///|
+fn report_timestamp(
+  pdf_bytes : Bytes,
+  tsa_anchors_path : String?,
+) -> Unit raise CliError {
+  let anchors = match tsa_anchors_path {
+    Some(path) => {
+      let text = read_text(path)
+      @pem.parse_certificates(text) catch {
+        e => raise CliError::Failure("cannot parse TSA anchors: " + e.message())
+      }
+    }
+    None => []
+  }
+  let outcome = @pades.verify_timestamp_at(pdf_bytes, 0, anchors, now_seconds()) catch {
+    _ => return
+  }
+  if !outcome.present {
+    return
+  }
+  if !outcome.valid {
+    println("  timestamp: INVALID")
+    match outcome.error {
+      Some(message) => println("    " + message)
+      None => ()
+    }
+  } else {
+    match outcome.chain {
+      Some(chain) =>
+        println(
+          "  timestamp: VALID and TRUSTED (" +
+          chain.certificates.length().to_string() +
+          " certificates)",
+        )
+      None => println("  timestamp: VALID (TSA chain not checked)")
+    }
+  }
+}
+
+///|
 fn verify_impl(args : Array[String]) -> Unit raise CliError {
   let options = parse_options(args)
   let input = require(options.input, "input PDF")
@@ -457,6 +502,7 @@ fn verify_impl(args : Array[String]) -> Unit raise CliError {
           }
         }
       }
+      report_timestamp(pdf_bytes, options.tsa_anchors)
       if !outcome.signature_valid {
         @env.exit(2)
       }
@@ -503,6 +549,7 @@ fn verify_impl(args : Array[String]) -> Unit raise CliError {
           println("  The document changed, or the certificate does not match.")
         }
       }
+      report_timestamp(pdf_bytes, options.tsa_anchors)
       if !valid {
         @env.exit(2)
       }

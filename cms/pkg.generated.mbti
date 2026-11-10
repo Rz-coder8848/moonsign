@@ -24,6 +24,8 @@ pub fn signed_attrs_to_implicit(Bytes) -> Bytes
 
 pub fn signer_certificate(SignedData, SignerInfo) -> @x509.Certificate?
 
+pub fn signing_time(SignerInfo) -> Int64?
+
 pub fn unsigned_attributes(SignerInfo) -> Array[Attribute] raise CmsError
 
 pub fn verify_signed_data(SignedData, @x509.Certificate, Bytes) -> Bool

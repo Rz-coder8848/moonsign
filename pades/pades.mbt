@@ -367,3 +367,82 @@ pub fn sign_pdf_with_timestamp(
     e => raise PadesError::Pdf(e)
   }
 }
+
+///|
+/// Result of checking the timestamp token attached to a signature.
+pub(all) struct TimestampOutcome {
+  present : Bool
+  valid : Bool
+  chain : @trust.Chain?
+  error : String?
+}
+
+///|
+/// Check the RFC 3161 timestamp of signature `index`.
+///
+/// `tsa_anchors` may be empty: the token signature and its match with the
+/// signature value are still checked, but TSA trust is not.
+pub fn verify_timestamp_at(
+  pdf_bytes : Bytes,
+  index : Int32,
+  tsa_anchors : Array[@x509.Certificate],
+  at_time : Int64,
+) -> TimestampOutcome raise PadesError {
+  let signatures = @pdf.find_signatures(pdf_bytes)
+  if index < 0 || index >= signatures.length() {
+    raise PadesError::NoSignature
+  }
+  let signature = signatures[index]
+  let signed_data = @cms.parse_signed_data(signature.contents) catch {
+    e => raise PadesError::Cms(e)
+  }
+  if signed_data.signer_infos.length() == 0 {
+    raise PadesError::NoSignature
+  }
+  let signer_info = signed_data.signer_infos[0]
+  let attributes = @cms.unsigned_attributes(signer_info) catch {
+    e => raise PadesError::Cms(e)
+  }
+  let mut token : Bytes? = None
+  for attribute in attributes {
+    if attribute.oid == @oids.id_aa_signature_time_stamp &&
+      attribute.values.length() > 0 {
+      token = Some(attribute.values[0])
+    }
+  }
+  let token_value = match token {
+    Some(value) => value
+    None => return { present: false, valid: false, chain: None, error: None, }
+  }
+  let hash = match @crypto.Hash::from_oid(signer_info.digest_oid) {
+    Some(value) => value
+    None => raise PadesError::UnsupportedDigest(signer_info.digest_oid)
+  }
+  let valid = @tsa.verify_token(token_value, signer_info.signature, hash)
+  if !valid {
+    return {
+      present: true,
+      valid: false,
+      chain: None,
+      error: Some("timestamp token does not match the signature"),
+    }
+  }
+  if tsa_anchors.length() == 0 {
+    return { present: true, valid: true, chain: None, error: None, }
+  }
+  let chain_time = match @cms.signing_time(signer_info) {
+    Some(value) => value
+    None => at_time
+  }
+  let built : Result[@trust.Chain, String] = Ok(
+    @tsa.verify_token_chain(token_value, tsa_anchors, chain_time),
+  ) catch {
+    e => Err(e.message())
+  }
+  match built {
+    Ok(chain) =>
+      { present: true, valid: true, chain: Some(chain), error: None, }
+    Err(message) =>
+      { present: true, valid: true, chain: None, error: Some(message), }
+  }
+}

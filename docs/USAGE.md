@@ -5,7 +5,7 @@
 作为 MoonBit 依赖：
 
 ```sh
-moon add Rz-coder8848/moonsign@0.6.0
+moon add Rz-coder8848/moonsign@0.7.0
 ```
 
 从源码运行命令行（需要 MoonBit 工具链）：
@@ -56,6 +56,7 @@ moonsign tsa-embed <signed.pdf> --response <response.der> [--anchors <tsa-ca.pem
 | `--cert <pem>` | 只检查"签名和这张证书是否匹配"，不判断信任 |
 | `--anchors <pem>` | 给一个或多个信任根，检查证书链 |
 | `--crl <pem>` | 吊销列表（PEM，可包含多个 `X509 CRL` 块） |
+| `--tsa-anchors <pem>` | 时间戳服务的信任根；给了就检查时间戳证书链 |
 | `--json` | 输出机器可读结果（含 `valid`、`trusted`、`chain_length`） |
 
 `--cert` 和 `--anchors` 至少给一个。
@@ -81,6 +82,16 @@ moonsign tsa-embed signed.pdf --response resp.der --anchors tsa-ca.pem --out sta
 ```
 
 `tsa-embed` 会先检查响应里的时间戳是否对应这份签名，再写进 PDF；给了 `--anchors` 还会验证 TSA 的签名、EKU 和证书链。签名值本身不变，只增加未签名属性（unsigned attributes），所以原来的签名仍然有效。
+
+验证带时间戳的 PDF：
+
+```sh
+moonsign verify stamped.pdf --cert cert.pem --tsa-anchors tsa-ca.pem
+```
+
+会多输出一行时间戳状态：`VALID and TRUSTED`、`VALID (TSA chain not checked)` 或 `INVALID`。
+
+> 证书链校验使用 PDF 里的 `signingTime`（没有就用当前时间），所以证书到期后，旧签名不会因为"现在过期"而误报。
 
 ## 常见问题
 

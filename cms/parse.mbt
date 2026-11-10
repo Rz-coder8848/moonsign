@@ -198,3 +198,19 @@ pub fn unsigned_attributes(si : SignerInfo) -> Array[Attribute] raise CmsError {
     None => []
   }
 }
+
+///|
+/// The `signingTime` signed attribute of a signer, in Unix seconds.
+pub fn signing_time(si : SignerInfo) -> Int64? {
+  for attribute in si.signed_attrs {
+    if attribute.oid == @oids.id_signing_time {
+      if attribute.values.length() > 0 {
+        let reader = @der.DerReader::new(attribute.values[0])
+        let tlv = reader.read_tlv() catch { _ => return None }
+        let parsed = @der.der_time_parse(tlv) catch { _ => return None }
+        return Some(parsed)
+      }
+    }
+  }
+  None
+}
