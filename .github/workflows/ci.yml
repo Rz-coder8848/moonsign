@@ -97,7 +97,8 @@ jobs:
           if [ "$code" -ne 3 ]; then
             echo "expected exit 3 (valid but untrusted), got $code"
             exit 1
-          fi          moon run cmd/moonsign -- verify chain-signed.pdf \
+          fi
+          moon run cmd/moonsign -- verify chain-signed.pdf \
             --anchors testdata/certs/ca.crt --ocsp testdata/certs/ocsp-good.der | tee ocsp.txt
           grep -q "OCSP: good" ocsp.txt
           set +e
