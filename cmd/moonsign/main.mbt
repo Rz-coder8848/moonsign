@@ -27,6 +27,7 @@ fn usage() -> Unit {
   println("  --out <path>      output PDF (default: <in>.signed.pdf)")
   println("  --chain <path>    extra certificates to embed during signing")
   println("  --anchors <path>  trust anchors used to check the signer chain")
+  println("  --crl <path>      CRLs (PEM) used to check revocation")
   println("  --field <name>    signature field name (default: Signature1)")
   println("  --json            machine-readable summary")
   println("")
@@ -52,6 +53,7 @@ pub(all) struct CliOptions {
   mut cert : String?
   mut chain : String?
   mut anchors : String?
+  mut crl : String?
   mut field : String
   mut json : Bool
 }
@@ -73,6 +75,7 @@ fn parse_options(args : Array[String]) -> CliOptions raise CliError {
     cert: None,
     chain: None,
     anchors: None,
+    crl: None,
     field: "Signature1",
     json: false,
   }
@@ -87,6 +90,7 @@ fn parse_options(args : Array[String]) -> CliOptions raise CliError {
       arg == "--cert" ||
       arg == "--chain" ||
       arg == "--anchors" ||
+      arg == "--crl" ||
       arg == "--field" {
       if index + 1 >= args.length() {
         raise CliError::Failure("missing value for " + arg)
@@ -102,6 +106,8 @@ fn parse_options(args : Array[String]) -> CliOptions raise CliError {
         options.chain = Some(value)
       } else if arg == "--anchors" {
         options.anchors = Some(value)
+      } else if arg == "--crl" {
+        options.crl = Some(value)
       } else {
         options.field = value
       }
@@ -260,6 +266,27 @@ fn sign_impl(args : Array[String]) -> Unit raise CliError {
 ///|
 
 ///|
+fn read_crls(path : String) -> Array[@x509.Crl] raise CliError {
+  let text = read_text(path)
+  let blocks = @pem.parse_pem(text) catch {
+    e => raise CliError::Failure("cannot parse CRL PEM: " + e.message())
+  }
+  let out : Array[@x509.Crl] = []
+  for block in blocks {
+    if block.label == "X509 CRL" {
+      let crl = @x509.parse_crl(block.der) catch {
+        e => raise CliError::Failure("cannot parse CRL: " + e.message())
+      }
+      out.push(crl)
+    }
+  }
+  if out.length() == 0 {
+    raise CliError::Failure("no X509 CRL block found in " + path)
+  }
+  out
+}
+
+///|
 fn now_seconds() -> Int64 {
   let raw = @env.now().reinterpret_as_int64()
   if raw > 100000000000L {
@@ -292,9 +319,14 @@ fn verify_impl(args : Array[String]) -> Unit raise CliError {
       if anchors.length() == 0 {
         raise CliError::Failure("no CERTIFICATE block found in " + path)
       }
-      let outcome = @pades.verify_pdf_with_anchors(
+      let crls = match options.crl {
+        Some(path) => read_crls(path)
+        None => []
+      }
+      let outcome = @pades.verify_pdf_with_anchors_and_crls(
         pdf_bytes,
         anchors,
+        crls,
         now_seconds(),
       ) catch {
         e => raise CliError::Failure(e.message())

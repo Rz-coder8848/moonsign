@@ -226,6 +226,8 @@ def main() -> None:
         "",
         f'pub let chain_leaf_key_der_hex : String = "{der_hex(leaf_key_der)}"',
         "",
+        f'pub let crl_der_hex : String = "{der_hex(CERTS / "crl.der")}"',
+        "",
     ]
     OUT.write_text("\n".join(lines), encoding="utf-8")
     print(f"wrote {OUT} ({OUT.stat().st_size} bytes)")

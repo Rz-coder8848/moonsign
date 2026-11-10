@@ -12,6 +12,8 @@ pub let chain_leaf_key_der_hex : String
 
 pub let chain_root_der_hex : String
 
+pub let crl_der_hex : String
+
 pub let ec_cert_der_hex : String
 
 pub let ec_key_der_hex : String

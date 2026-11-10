@@ -8,12 +8,17 @@ import {
 // Values
 pub fn parse_certificate(Bytes) -> Certificate raise X509Error
 
+pub fn parse_crl(Bytes) -> Crl raise X509Error
+
 pub fn verify_certificate_signature(Certificate, Certificate) -> Bool
+
+pub fn verify_crl_signature(Crl, Certificate) -> Bool
 
 // Errors
 pub(all) suberror X509Error {
   Der(@der.DerError)
   NotACertificate
+  NotACrl
   MissingField(String)
   BadPublicKey
 }
@@ -45,6 +50,18 @@ pub fn Certificate::ec_public_key(Self) -> Bytes?
 pub fn Certificate::is_self_issued(Self) -> Bool
 pub fn Certificate::is_valid_at(Self, Int64) -> Bool
 pub fn Certificate::rsa_public_key(Self) -> (Bytes, Bytes)?
+
+pub(all) struct Crl {
+  der : Bytes
+  tbs_raw : Bytes
+  issuer_raw : Bytes
+  this_update : Int64
+  next_update : Int64?
+  revoked_serials : Array[Bytes]
+  signature_algorithm_oid : String
+  signature_bits : Bytes
+}
+pub fn Crl::is_revoked(Self, Bytes) -> Bool
 
 // Type aliases
 

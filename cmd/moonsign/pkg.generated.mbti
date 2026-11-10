@@ -16,6 +16,7 @@ pub(all) struct CliOptions {
   mut cert : String?
   mut chain : String?
   mut anchors : String?
+  mut crl : String?
   mut field : String
   mut json : Bool
 }

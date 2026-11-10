@@ -8,6 +8,8 @@ import {
 // Values
 pub fn build_chain(@x509.Certificate, Array[@x509.Certificate], Array[@x509.Certificate], Int64) -> Chain raise TrustError
 
+pub fn build_chain_with_crls(@x509.Certificate, Array[@x509.Certificate], Array[@x509.Certificate], Array[@x509.Crl], Int64) -> Chain raise TrustError
+
 // Errors
 pub(all) suberror TrustError {
   X509(@x509.X509Error)
@@ -18,6 +20,7 @@ pub(all) suberror TrustError {
   Expired
   NotYetValid
   SignatureInvalid
+  Revoked
   LoopDetected
 }
 pub fn TrustError::message(Self) -> String

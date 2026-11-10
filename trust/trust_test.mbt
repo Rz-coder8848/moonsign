@@ -69,3 +69,26 @@ test "not-yet-valid certificate is rejected" {
   }
   inspect(message.contains("not valid yet"), content="true")
 }
+
+///|
+test "revoked certificate is rejected" {
+  let leaf = trust_cert(@fixtures.chain_leaf_der_hex)
+  let intermediate = trust_cert(@fixtures.chain_intermediate_der_hex)
+  let root = trust_cert(@fixtures.chain_root_der_hex)
+  let crl = @x509.parse_crl(@fixtures.bytes_of_hex(@fixtures.crl_der_hex)) catch {
+    _ => abort("failed to parse CRL")
+  }
+  let message = try {
+    let _ = @trust.build_chain_with_crls(
+      leaf,
+      [intermediate],
+      [root],
+      [crl],
+      1794500000L,
+    )
+    ""
+  } catch {
+    e => e.message()
+  }
+  inspect(message.contains("revoked"), content="true")
+}

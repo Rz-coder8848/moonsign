@@ -5,4 +5,5 @@ import {
 
 import {
   "Rz-coder8848/moonsign/testdata" @fixtures,
+  "Rz-coder8848/moonsign/x509",
 } for "test"

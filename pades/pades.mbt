@@ -197,6 +197,18 @@ pub fn verify_pdf_with_anchors(
   anchors : Array[@x509.Certificate],
   at_time : Int64,
 ) -> VerifyOutcome raise PadesError {
+  verify_pdf_with_anchors_and_crls(pdf_bytes, anchors, [], at_time)
+}
+
+///|
+/// Same as `verify_pdf_with_anchors`, but also checks revocation against
+/// `crls` while building the certificate path.
+pub fn verify_pdf_with_anchors_and_crls(
+  pdf_bytes : Bytes,
+  anchors : Array[@x509.Certificate],
+  crls : Array[@x509.Crl],
+  at_time : Int64,
+) -> VerifyOutcome raise PadesError {
   let signatures = @pdf.find_signatures(pdf_bytes)
   if signatures.length() == 0 {
     raise PadesError::NoSignature
@@ -235,7 +247,9 @@ pub fn verify_pdf_with_anchors(
       intermediates.push(parsed)
     }
     let built : Result[@trust.Chain, String] = Ok(
-      @trust.build_chain(signer, intermediates, anchors, at_time),
+      @trust.build_chain_with_crls(
+        signer, intermediates, anchors, crls, at_time,
+      ),
     ) catch {
       e => Err(e.message())
     }

@@ -94,3 +94,20 @@ test "verify certificate signatures" {
   inspect(@x509.verify_certificate_signature(root, root), content="true")
   inspect(@x509.verify_certificate_signature(leaf, root), content="false")
 }
+
+///|
+test "parse CRL and check revocation" {
+  let crl = @x509.parse_crl(@fixtures.bytes_of_hex(@fixtures.crl_der_hex)) catch {
+    _ => fail("failed to parse CRL")
+  }
+  let intermediate = chain_cert(@fixtures.chain_intermediate_der_hex)
+  let leaf = chain_cert(@fixtures.chain_leaf_der_hex)
+  inspect(crl.revoked_serials.length(), content="1")
+  inspect(
+    @der.der_bytes_compare(crl.issuer_raw, intermediate.subject_raw) == 0,
+    content="true",
+  )
+  inspect(crl.is_revoked(leaf.serial_raw), content="true")
+  inspect(crl.is_revoked(intermediate.serial_raw), content="false")
+  inspect(@x509.verify_crl_signature(crl, intermediate), content="true")
+}

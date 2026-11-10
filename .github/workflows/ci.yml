@@ -98,6 +98,15 @@ jobs:
             echo "expected exit 3 (valid but untrusted), got $code"
             exit 1
           fi
+          set +e
+          moon run cmd/moonsign -- verify chain-signed.pdf \
+            --anchors testdata/certs/ca.crt --crl testdata/certs/crl.pem
+          code=$?
+          set -e
+          if [ "$code" -ne 3 ]; then
+            echo "expected exit 3 (revoked), got $code"
+            exit 1
+          fi
       - name: Run the example
         run: bash examples/sign-and-verify/run.sh
 

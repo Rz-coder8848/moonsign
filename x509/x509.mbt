@@ -3,6 +3,7 @@
 pub(all) suberror X509Error {
   Der(@der.DerError)
   NotACertificate
+  NotACrl
   MissingField(String)
   BadPublicKey
 }
@@ -348,39 +349,39 @@ fn signature_hash(oid : String) -> @crypto.Hash? {
 ///
 /// This checks the certificate signature only; validity, CA status and name
 /// chaining are the caller's job (see the `trust` package).
-pub fn verify_certificate_signature(
-  cert : Certificate,
+
+///|
+fn verify_signed_bytes(
+  algorithm_oid : String,
+  signed_bytes : Bytes,
+  signature_bits : Bytes,
   issuer : Certificate,
 ) -> Bool {
-  let hash = match signature_hash(cert.signature_algorithm_oid) {
+  let hash = match signature_hash(algorithm_oid) {
     Some(value) => value
     None => return false
   }
-  if cert.signature_bits.length() < 2 {
+  if signature_bits.length() < 2 {
     return false
   }
-  let signature_length = cert.signature_bits.length() - 1
+  let signature_length = signature_bits.length() - 1
   let signature = Array::make(signature_length, b'\x00')
   for i in 0..<signature_length {
-    signature[i] = cert.signature_bits[i + 1]
+    signature[i] = signature_bits[i + 1]
   }
   let signature_bytes = Bytes::from_array(signature[:])
-  if is_rsa_signature(cert.signature_algorithm_oid) {
+  if is_rsa_signature(algorithm_oid) {
     match issuer.rsa_public_key() {
       Some((modulus, exponent)) =>
         @crypto.verify_rsa_pkcs1(
-          hash,
-          cert.tbs_raw,
-          signature_bytes,
-          modulus,
-          exponent,
+          hash, signed_bytes, signature_bytes, modulus, exponent,
         )
       None => false
     }
-  } else if is_ecdsa_signature(cert.signature_algorithm_oid) {
+  } else if is_ecdsa_signature(algorithm_oid) {
     match issuer.ec_public_key() {
       Some(point) =>
-        @crypto.verify_ecdsa_p256(hash, cert.tbs_raw, signature_bytes, point)
+        @crypto.verify_ecdsa_p256(hash, signed_bytes, signature_bytes, point)
       None => false
     }
   } else {
@@ -389,11 +390,159 @@ pub fn verify_certificate_signature(
 }
 
 ///|
+/// Verify that `cert` was signed by `issuer`.
+///
+/// This checks the certificate signature only; validity, CA status and name
+/// chaining are the caller's job (see the `trust` package).
+pub fn verify_certificate_signature(
+  cert : Certificate,
+  issuer : Certificate,
+) -> Bool {
+  verify_signed_bytes(
+    cert.signature_algorithm_oid,
+    cert.tbs_raw,
+    cert.signature_bits,
+    issuer,
+  )
+}
+
+///|
+/// A parsed X.509 certificate revocation list.
+pub(all) struct Crl {
+  der : Bytes
+  tbs_raw : Bytes
+  issuer_raw : Bytes
+  this_update : Int64
+  next_update : Int64?
+  revoked_serials : Array[Bytes]
+  signature_algorithm_oid : String
+  signature_bits : Bytes
+}
+
+///|
+/// Parse a DER-encoded X.509 CRL.
+pub fn parse_crl(der : Bytes) -> Crl raise X509Error {
+  let outer = @der.DerReader::new(der)
+  let list = read_seq(outer)
+  let tbs = read_tlv(list)
+  if tbs.tag != @der.tag_sequence {
+    raise X509Error::NotACrl
+  }
+  let signature_algorithm = parse_algorithm_identifier(list)
+  let signature_value = read_expected(list, @der.tag_bit_string)
+  let tbs_reader = @der.DerReader::at(tbs.content, 0, tbs.content.length()) catch {
+    e => raise X509Error::Der(e)
+  }
+  match tbs_reader.peek_tag() {
+    Some(tag) => if tag == @der.tag_integer { let _ = read_tlv(tbs_reader) }
+    None => ()
+  }
+  let _signature = parse_algorithm_identifier(tbs_reader)
+  let issuer = read_expected(tbs_reader, @der.tag_sequence)
+  let this_update_tlv = read_tlv(tbs_reader)
+  let this_update = @der.der_time_parse(this_update_tlv) catch {
+    e => raise X509Error::Der(e)
+  }
+  let mut next_update : Int64? = None
+  match tbs_reader.peek_tag() {
+    Some(tag) =>
+      if tag == @der.tag_utc_time || tag == @der.tag_generalized_time {
+        let next_tlv = read_tlv(tbs_reader)
+        let parsed = @der.der_time_parse(next_tlv) catch {
+          e => raise X509Error::Der(e)
+        }
+        next_update = Some(parsed)
+      }
+    None => ()
+  }
+  let revoked : Array[Bytes] = []
+  match tbs_reader.peek_tag() {
+    Some(tag) =>
+      if tag == @der.tag_sequence {
+        let entries = read_seq(tbs_reader)
+        while !entries.is_empty() {
+          let entry = read_seq(entries)
+          let serial = read_expected(entry, @der.tag_integer)
+          revoked.push(serial.content)
+          let _date = read_tlv(entry)
+        }
+      }
+    None => ()
+  }
+  {
+    der,
+    tbs_raw: tbs.raw,
+    issuer_raw: issuer.raw,
+    this_update,
+    next_update,
+    revoked_serials: revoked,
+    signature_algorithm_oid: signature_algorithm.0,
+    signature_bits: signature_value.content,
+  }
+}
+
+///|
+fn serial_content(serial : Bytes) -> Bytes {
+  // Certificate serials are stored as the full INTEGER TLV; CRL entries are
+  // stored as content octets. Normalise both to content octets.
+  if serial.length() > 2 && serial[0].to_int() == 2 {
+    let length = serial[1].to_int()
+    if length < 128 && 2 + length <= serial.length() {
+      let out = Array::make(length, b'\x00')
+      for i in 0..<length {
+        out[i] = serial[2 + i]
+      }
+      return Bytes::from_array(out[:])
+    }
+  }
+  serial
+}
+
+///|
+fn normalize_serial(serial : Bytes) -> Bytes {
+  let mut start = 0
+  while start < serial.length() && serial[start].to_int() == 0 {
+    start = start + 1
+  }
+  let length = serial.length() - start
+  let out = Array::make(length, b'\x00')
+  for i in 0..<length {
+    out[i] = serial[start + i]
+  }
+  Bytes::from_array(out[:])
+}
+
+///|
+/// Whether the given serial number appears in the CRL.
+pub fn Crl::is_revoked(self : Crl, serial_raw : Bytes) -> Bool {
+  let target = normalize_serial(serial_content(serial_raw))
+  for revoked in self.revoked_serials {
+    if @der.der_bytes_compare(normalize_serial(serial_content(revoked)), target) ==
+      0 {
+      return true
+    }
+  }
+  false
+}
+
+///|
+/// Verify the CRL signature with the issuer certificate.
+pub fn verify_crl_signature(crl : Crl, issuer : Certificate) -> Bool {
+  verify_signed_bytes(
+    crl.signature_algorithm_oid,
+    crl.tbs_raw,
+    crl.signature_bits,
+    issuer,
+  )
+}
+
+///|
 /// Human-readable description of an X.509 error.
 pub fn X509Error::message(self : X509Error) -> String {
   match self {
     Der(detail) => "DER error: \{detail.message()}"
     NotACertificate => "input is not an X.509 certificate"
+    NotACrl => "input is not an X.509 CRL"
     MissingField(field) => "missing or malformed field: \{field}"
     BadPublicKey => "malformed public key"
   }

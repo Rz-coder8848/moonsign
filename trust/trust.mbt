@@ -9,6 +9,7 @@ pub(all) suberror TrustError {
   Expired
   NotYetValid
   SignatureInvalid
+  Revoked
   LoopDetected
 }
 
@@ -129,6 +130,39 @@ fn count_ca_certificates(chain : Array[@x509.Certificate]) -> Int32 {
 }
 
 ///|
+fn check_revocations(
+  chain : Array[@x509.Certificate],
+  crls : Array[@x509.Crl],
+  at_time : Int64,
+) -> Unit raise TrustError {
+  if crls.length() == 0 {
+    return
+  }
+  for i in 0..<(chain.length() - 1) {
+    let child = chain[i]
+    let issuer = chain[i + 1]
+    for crl in crls {
+      if @der.der_bytes_compare(crl.issuer_raw, child.issuer_raw) != 0 {
+        continue
+      }
+      if !@x509.verify_crl_signature(crl, issuer) {
+        continue
+      }
+      if crl.this_update > at_time {
+        continue
+      }
+      match crl.next_update {
+        Some(next) => if next < at_time { continue }
+        None => ()
+      }
+      if crl.is_revoked(child.serial_raw) {
+        raise TrustError::Revoked
+      }
+    }
+  }
+}
+
+///|
 /// Build and verify a chain from `leaf` to one of `anchors`.
 ///
 /// Checks signature links, validity at `at_time`, CA basic constraints, key
@@ -137,6 +171,18 @@ pub fn build_chain(
   leaf : @x509.Certificate,
   intermediates : Array[@x509.Certificate],
   anchors : Array[@x509.Certificate],
+  at_time : Int64,
+) -> Chain raise TrustError {
+  build_chain_with_crls(leaf, intermediates, anchors, [], at_time)
+}
+
+///|
+/// Same as `build_chain`, but also checks revocation against `crls`.
+pub fn build_chain_with_crls(
+  leaf : @x509.Certificate,
+  intermediates : Array[@x509.Certificate],
+  anchors : Array[@x509.Certificate],
+  crls : Array[@x509.Crl],
   at_time : Int64,
 ) -> Chain raise TrustError {
   ensure_valid(leaf, at_time)
@@ -153,6 +199,7 @@ pub fn build_chain(
         ensure_valid(issuer, at_time)
         if is_trust_anchor {
           chain.push(issuer)
+          check_revocations(chain, crls, at_time)
           return { certificates: chain, trusted: true, }
         }
         if !issuer.is_ca {
@@ -191,6 +238,7 @@ pub fn TrustError::message(self : TrustError) -> String {
     Expired => "certificate has expired"
     NotYetValid => "certificate is not valid yet"
     SignatureInvalid => "certificate signature does not verify"
+    Revoked => "certificate has been revoked"
     LoopDetected => "certificate chain loops"
   }
 }
