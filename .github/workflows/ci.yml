@@ -98,6 +98,8 @@ jobs:
             echo "expected exit 3 (valid but untrusted), got $code"
             exit 1
           fi
+      - name: Run the example
+        run: bash examples/sign-and-verify/run.sh
 
   pyhanko:
     name: interop (pyHanko)
