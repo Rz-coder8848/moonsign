@@ -1,5 +1,14 @@
 # 更新日志
 
+## 0.6.0（2026-11-10）
+
+- 时间戳增加信任校验：
+  - 验证 TSA 对时间戳令牌的 CMS 签名；
+  - 校验 TSA 证书的 timeStamping EKU；
+  - `tsa-embed --anchors <tsa-ca.pem>` 校验证书链；
+- 新增 EKU 解析；
+- 50 个测试，CI 用 OpenSSL TSA 端到端验证信任路径。
+
 ## 0.5.0（2026-11-10）
 
 - 新增 RFC 3161 时间戳（PAdES B-T）：

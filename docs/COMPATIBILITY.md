@@ -41,7 +41,7 @@
 | RFC 3161 请求生成 | ✅ `tsa-request` |
 | 响应解析与 imprint 校验 | ✅ |
 | 写入 unsignedAttrs（B-T） | ✅ `tsa-embed` |
-| TSA 证书链校验 | ❌（后续） |
+| TSA 证书链校验 | ✅ `tsa-embed --anchors`（含 timeStamping EKU） |
 | 直接联网调用 TSA | ❌（用 curl 等工具发送请求） |
 
 ## 验证器

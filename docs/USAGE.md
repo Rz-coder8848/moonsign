@@ -5,7 +5,7 @@
 作为 MoonBit 依赖：
 
 ```sh
-moon add Rz-coder8848/moonsign@0.5.0
+moon add Rz-coder8848/moonsign@0.6.0
 ```
 
 从源码运行命令行（需要 MoonBit 工具链）：
@@ -22,7 +22,7 @@ moonsign verify <in.pdf> --cert <cert.pem> [--json]
 moonsign verify <in.pdf> --anchors <ca.pem> [--crl <crl.pem>] [--json]
 moonsign info   <in.pdf> [--json]
 moonsign tsa-request <signed.pdf> --out <request.der>
-moonsign tsa-embed <signed.pdf> --response <response.der> --out <out.pdf>
+moonsign tsa-embed <signed.pdf> --response <response.der> [--anchors <tsa-ca.pem>] --out <out.pdf>
 ```
 
 退出码：
@@ -76,11 +76,11 @@ moonsign tsa-request signed.pdf --out req.der
 curl -H "Content-Type: application/timestamp-query" \
   --data-binary @req.der https://tsa.example/ -o resp.der
 
-# 3. 嵌入响应
-moonsign tsa-embed signed.pdf --response resp.der --out stamped.pdf
+# 3. 嵌入响应（--anchors 可选：验证 TSA 证书链与 timeStamping 用途）
+moonsign tsa-embed signed.pdf --response resp.der --anchors tsa-ca.pem --out stamped.pdf
 ```
 
-`tsa-embed` 会先检查响应里的时间戳是否对应这份签名，再写进 PDF；签名值本身不变，只增加未签名属性（unsigned attributes），所以原来的签名仍然有效。
+`tsa-embed` 会先检查响应里的时间戳是否对应这份签名，再写进 PDF；给了 `--anchors` 还会验证 TSA 的签名、EKU 和证书链。签名值本身不变，只增加未签名属性（unsigned attributes），所以原来的签名仍然有效。
 
 ## 常见问题
 
