@@ -1,5 +1,14 @@
 # 更新日志
 
+## 0.5.0（2026-11-10）
+
+- 新增 RFC 3161 时间戳（PAdES B-T）：
+  - `tsa-request` 从已签名 PDF 生成时间戳请求；
+  - `tsa-embed` 校验并嵌入 TSA 响应；
+  - 库 API `pades.sign_pdf_with_timestamp`（transport 回调）；
+  - CI 用 OpenSSL TSA 做端到端验证；
+- 49 个测试。
+
 ## 0.4.0（2026-11-10）
 
 - 签名时可以写入签名说明：`--reason`、`--location`、`--contact`；

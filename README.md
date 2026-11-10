@@ -2,7 +2,7 @@
 
 用纯 MoonBit 写的 PDF 数字签名工具：**给 PDF 签名，并验证它有没有被改过。**
 
-> 当前是 0.4 开发版，功能可用但还不适合直接用于有法律效力的正式签署。
+> 当前是 0.5 开发版，功能可用但还不适合直接用于有法律效力的正式签署。
 
 ## 它解决什么问题
 
@@ -24,18 +24,19 @@
 | 能力 | 状态 |
 | --- | --- |
 | 签名算法 | RSA PKCS#1 v1.5、ECDSA P-256，SHA-256 |
-| 签名格式 | PAdES B-B（`ETSI.CAdES.detached`），CMS SignedData |
+| 签名格式 | PAdES B-B（`ETSI.CAdES.detached`），CMS SignedData；可附加 B-T 时间戳 |
 | 验签 | 检查字节范围、摘要、签名；文件被改一个字节就失败 |
 | 证书链 | `--anchors` 指定信任根，检查签名者证书能否链到它 |
 | 吊销检查 | `--crl` 指定 CRL（PEM），拒绝已被吊销的证书 |
 | 命令行 | `sign` / `verify` / `info` |
 | 互操作 | OpenSSL 与 pyHanko 双向验证（CI 每次都跑） |
+| 时间戳 | RFC 3161：生成请求、嵌入 TSA 响应（B-T） |
 | 平台 | Linux / macOS / Windows（CI 三平台跑测试） |
-| 发布 | mooncakes.io：[Rz-coder8848/moonsign@0.4.0](https://mooncakes.io/docs/Rz-coder8848/moonsign@0.4.0) |
+| 发布 | mooncakes.io：[Rz-coder8848/moonsign@0.5.0](https://mooncakes.io/docs/Rz-coder8848/moonsign@0.5.0) |
 
 ## 快速开始
 
-作为依赖使用：`moon add Rz-coder8848/moonsign@0.4.0`。
+作为依赖使用：`moon add Rz-coder8848/moonsign@0.5.0`。
 
 先准备一张空白 PDF 和一张测试证书（正式使用请换成你自己的证书）：
 
@@ -100,6 +101,24 @@ moon run cmd/moonsign -- verify signed.pdf \
 ```
 
 证书被吊销时，结果会是 `VALID but NOT TRUSTED`，原因写 `certificate has been revoked`（退出码 3）。
+
+### 加时间戳（B-T）
+
+时间戳用来证明"这个签名是什么时候做的"。MoonSign 不直接联网，分三步：
+
+```sh
+# 1. 从已签名的 PDF 生成时间戳请求
+moon run cmd/moonsign -- tsa-request signed.pdf --out req.der
+
+# 2. 把 req.der 发给任意 RFC 3161 时间戳服务（curl 示例）
+curl -H "Content-Type: application/timestamp-query" \
+  --data-binary @req.der https://your-tsa.example/ -o resp.der
+
+# 3. 把响应嵌进 PDF
+moon run cmd/moonsign -- tsa-embed signed.pdf --response resp.der --out stamped.pdf
+```
+
+签名本身不变，只是多了时间戳附件；`verify` 仍然通过。嵌入前会检查时间戳确实对应这个签名。
 
 ## 在代码里使用
 
