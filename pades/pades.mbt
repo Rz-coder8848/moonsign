@@ -430,12 +430,8 @@ pub fn verify_timestamp_at(
   if tsa_anchors.length() == 0 {
     return { present: true, valid: true, chain: None, error: None, }
   }
-  let chain_time = match @cms.signing_time(signer_info) {
-    Some(value) => value
-    None => at_time
-  }
   let built : Result[@trust.Chain, String] = Ok(
-    @tsa.verify_token_chain(token_value, tsa_anchors, chain_time),
+    @tsa.verify_token_chain(token_value, tsa_anchors, at_time),
   ) catch {
     e => Err(e.message())
   }
