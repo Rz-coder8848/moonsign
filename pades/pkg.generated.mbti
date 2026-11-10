@@ -5,6 +5,7 @@ import {
   "Rz-coder8848/moonsign/cms",
   "Rz-coder8848/moonsign/crypto",
   "Rz-coder8848/moonsign/pdf",
+  "Rz-coder8848/moonsign/trust",
   "Rz-coder8848/moonsign/x509",
 }
 
@@ -14,6 +15,8 @@ pub fn default_sign_options() -> SignOptions
 pub fn sign_pdf(Bytes, SigningKey, @x509.Certificate, Array[Bytes], SignOptions) -> Bytes raise PadesError
 
 pub fn verify_pdf(Bytes, @x509.Certificate) -> Bool raise PadesError
+
+pub fn verify_pdf_with_anchors(Bytes, Array[@x509.Certificate], Int64) -> VerifyOutcome raise PadesError
 
 // Errors
 pub(all) suberror PadesError {
@@ -39,6 +42,13 @@ pub(all) struct SignOptions {
 pub(all) enum SigningKey {
   Rsa(Bytes, Bytes)
   EcdsaP256(Bytes)
+}
+
+pub(all) struct VerifyOutcome {
+  signature_valid : Bool
+  signer : @x509.Certificate?
+  chain : @trust.Chain?
+  trust_error : String?
 }
 
 // Type aliases

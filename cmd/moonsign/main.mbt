@@ -20,15 +20,18 @@ fn usage() -> Unit {
     "  moonsign sign <in.pdf> --key <key.pem> --cert <cert.pem> [options]",
   )
   println("  moonsign verify <in.pdf> --cert <cert.pem> [--json]")
+  println("  moonsign verify <in.pdf> --anchors <ca.pem> [--json]")
   println("  moonsign info <in.pdf> [--json]")
   println("")
   println("Sign options:")
   println("  --out <path>      output PDF (default: <in>.signed.pdf)")
-  println("  --chain <path>    extra certificates to embed")
+  println("  --chain <path>    extra certificates to embed during signing")
+  println("  --anchors <path>  trust anchors used to check the signer chain")
   println("  --field <name>    signature field name (default: Signature1)")
   println("  --json            machine-readable summary")
   println("")
-  println("Exit codes: 0 ok/valid, 2 invalid signature, 1 usage or I/O error")
+  println("Exit codes: 0 ok/valid, 2 invalid signature, 3 valid but untrusted,")
+  println("            1 usage or I/O error")
 }
 
 ///|
@@ -48,6 +51,7 @@ pub(all) struct CliOptions {
   mut key : String?
   mut cert : String?
   mut chain : String?
+  mut anchors : String?
   mut field : String
   mut json : Bool
 }
@@ -68,6 +72,7 @@ fn parse_options(args : Array[String]) -> CliOptions raise CliError {
     key: None,
     cert: None,
     chain: None,
+    anchors: None,
     field: "Signature1",
     json: false,
   }
@@ -81,6 +86,7 @@ fn parse_options(args : Array[String]) -> CliOptions raise CliError {
       arg == "--key" ||
       arg == "--cert" ||
       arg == "--chain" ||
+      arg == "--anchors" ||
       arg == "--field" {
       if index + 1 >= args.length() {
         raise CliError::Failure("missing value for " + arg)
@@ -94,6 +100,8 @@ fn parse_options(args : Array[String]) -> CliOptions raise CliError {
         options.cert = Some(value)
       } else if arg == "--chain" {
         options.chain = Some(value)
+      } else if arg == "--anchors" {
+        options.anchors = Some(value)
       } else {
         options.field = value
       }
@@ -250,51 +258,155 @@ fn sign_impl(args : Array[String]) -> Unit raise CliError {
 }
 
 ///|
+
+///|
+fn now_seconds() -> Int64 {
+  let raw = @env.now().reinterpret_as_int64()
+  if raw > 100000000000L {
+    raw / 1000L
+  } else {
+    raw
+  }
+}
+
+///|
 fn verify_impl(args : Array[String]) -> Unit raise CliError {
   let options = parse_options(args)
   let input = require(options.input, "input PDF")
-  let cert_path = require(options.cert, "certificate (--cert)")
   let pdf_bytes = read_bytes(input)
-  let cert_text = read_text(cert_path)
-  let certs = @pem.parse_certificates(cert_text) catch {
-    e => raise CliError::Failure("cannot parse certificate: " + e.message())
-  }
-  if certs.length() == 0 {
-    raise CliError::Failure("no CERTIFICATE block found in " + cert_path)
-  }
   let signatures = @pdf.find_signatures(pdf_bytes)
   if signatures.length() == 0 {
     raise CliError::Failure("no signature found in " + input)
   }
-  let valid = @pades.verify_pdf(pdf_bytes, certs[0]) catch {
-    e => raise CliError::Failure(e.message())
+  let cert_path = options.cert
+  let anchors_path = options.anchors
+  if cert_path is None && anchors_path is None {
+    raise CliError::Failure("verify needs --cert <pem> or --anchors <pem>")
   }
-  if options.json {
-    println(
-      "{\"command\":\"verify\",\"valid\":" +
-      (if valid { "true" } else { "false" }) +
-      ",\"signatures\":" +
-      signatures.length().to_string() +
-      ",\"field\":\"" +
-      json_escape(signatures[0].field_name) +
-      "\"}",
-    )
-  } else {
-    println("Signature 1: " + signatures[0].field_name)
-    println("  subfilter: " + signatures[0].subfilter)
-    if valid {
-      println("Result: VALID")
-      println("  The document has not changed since signing.")
-      println(
-        "  (Trust in the certificate is your decision: pass the right one.)",
-      )
-    } else {
-      println("Result: INVALID")
-      println("  The document changed, or the certificate does not match.")
+  match anchors_path {
+    Some(path) => {
+      let anchors_text = read_text(path)
+      let anchors = @pem.parse_certificates(anchors_text) catch {
+        e => raise CliError::Failure("cannot parse anchors: " + e.message())
+      }
+      if anchors.length() == 0 {
+        raise CliError::Failure("no CERTIFICATE block found in " + path)
+      }
+      let outcome = @pades.verify_pdf_with_anchors(
+        pdf_bytes,
+        anchors,
+        now_seconds(),
+      ) catch {
+        e => raise CliError::Failure(e.message())
+      }
+      let trusted = match outcome.chain {
+        Some(_) => true
+        None => false
+      }
+      if options.json {
+        let buf = StringBuilder()
+        buf.write_string("{\"command\":\"verify\",\"valid\":")
+        buf.write_string(if outcome.signature_valid { "true" } else { "false" })
+        buf.write_string(",\"trusted\":")
+        buf.write_string(if trusted { "true" } else { "false" })
+        buf.write_string(",\"signatures\":")
+        buf.write_string(signatures.length().to_string())
+        buf.write_string(",\"field\":\"")
+        buf.write_string(json_escape(signatures[0].field_name))
+        buf.write_string("\"")
+        match outcome.chain {
+          Some(chain) => {
+            buf.write_string(",\"chain_length\":")
+            buf.write_string(chain.certificates.length().to_string())
+          }
+          None => ()
+        }
+        match outcome.trust_error {
+          Some(message) => {
+            buf.write_string(",\"trust_error\":\"")
+            buf.write_string(json_escape(message))
+            buf.write_string("\"")
+          }
+          None => ()
+        }
+        buf.write_string("}")
+        println(buf.to_string())
+      } else {
+        println("Signature 1: " + signatures[0].field_name)
+        println("  subfilter: " + signatures[0].subfilter)
+        if !outcome.signature_valid {
+          println("Result: INVALID")
+          println("  The document changed, or the signature does not verify.")
+        } else if trusted {
+          println("Result: VALID and TRUSTED")
+          match outcome.chain {
+            Some(chain) =>
+              println(
+                "  Certificate chain: " +
+                chain.certificates.length().to_string() +
+                " certificates, ending at a trust anchor you supplied.",
+              )
+            None => ()
+          }
+        } else {
+          println("Result: VALID but NOT TRUSTED")
+          println("  The signature is intact, but no chain to your anchor.")
+          match outcome.trust_error {
+            Some(message) => println("  reason: " + message)
+            None => ()
+          }
+        }
+      }
+      if !outcome.signature_valid {
+        @env.exit(2)
+      }
+      if !trusted {
+        @env.exit(3)
+      }
     }
-  }
-  if !valid {
-    @env.exit(2)
+    None => {
+      let path = match cert_path {
+        Some(value) => value
+        None => raise CliError::Failure("verify needs --cert or --anchors")
+      }
+      let cert_text = read_text(path)
+      let certs = @pem.parse_certificates(cert_text) catch {
+        e => raise CliError::Failure("cannot parse certificate: " + e.message())
+      }
+      if certs.length() == 0 {
+        raise CliError::Failure("no CERTIFICATE block found in " + path)
+      }
+      let valid = @pades.verify_pdf(pdf_bytes, certs[0]) catch {
+        e => raise CliError::Failure(e.message())
+      }
+      if options.json {
+        println(
+          "{\"command\":\"verify\",\"valid\":" +
+          (if valid { "true" } else { "false" }) +
+          ",\"signatures\":" +
+          signatures.length().to_string() +
+          ",\"field\":\"" +
+          json_escape(signatures[0].field_name) +
+          "\"}",
+        )
+      } else {
+        println("Signature 1: " + signatures[0].field_name)
+        println("  subfilter: " + signatures[0].subfilter)
+        if valid {
+          println("Result: VALID")
+          println("  The document has not changed since signing.")
+          println(
+            "  (Trust in the certificate is your decision: pass the right one.)",
+          )
+        } else {
+          println("Result: INVALID")
+          println("  The document changed, or the certificate does not match.")
+        }
+      }
+      if !valid {
+        @env.exit(2)
+      }
+    }
   }
 }
 

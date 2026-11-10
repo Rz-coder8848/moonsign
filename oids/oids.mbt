@@ -96,6 +96,22 @@ pub let sm3 : String = "1.2.156.10197.1.401"
 pub let sm2_with_sm3 : String = "1.2.156.10197.1.501"
 
 ///|
+/// Basic Constraints extension (2.5.29.19)
+pub let basic_constraints : String = "2.5.29.19"
+
+///|
+/// Key Usage extension (2.5.29.15)
+pub let key_usage : String = "2.5.29.15"
+
+///|
+/// Subject Key Identifier extension (2.5.29.14)
+pub let subject_key_identifier : String = "2.5.29.14"
+
+///|
+/// Authority Key Identifier extension (2.5.29.35)
+pub let authority_key_identifier : String = "2.5.29.35"
+
+///|
 /// Encode a dotted OID constant into a DER TLV.
 ///
 /// Aborts on malformed constants: these are compile-time strings owned by this

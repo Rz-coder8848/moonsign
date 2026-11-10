@@ -49,3 +49,48 @@ test "reject malformed certificate" {
   }
   inspect(failed, content="true")
 }
+
+///|
+fn chain_cert(hex : String) -> @x509.Certificate {
+  @x509.parse_certificate(@fixtures.bytes_of_hex(hex)) catch {
+    _ => abort("failed to parse chain certificate")
+  }
+}
+
+///|
+test "parse certificate extensions" {
+  let root = chain_cert(@fixtures.chain_root_der_hex)
+  inspect(root.is_ca, content="true")
+  inspect(root.key_cert_sign, content="true")
+  let intermediate = chain_cert(@fixtures.chain_intermediate_der_hex)
+  inspect(intermediate.is_ca, content="true")
+  inspect(intermediate.key_cert_sign, content="true")
+  match intermediate.path_len {
+    Some(limit) => inspect(limit, content="0")
+    None => fail("expected a path length constraint")
+  }
+  let leaf = chain_cert(@fixtures.chain_leaf_der_hex)
+  inspect(leaf.is_ca, content="false")
+  inspect(leaf.key_cert_sign, content="false")
+  match leaf.authority_key_id {
+    Some(_) => ()
+    None => fail("expected an authority key identifier")
+  }
+}
+
+///|
+test "verify certificate signatures" {
+  let root = chain_cert(@fixtures.chain_root_der_hex)
+  let intermediate = chain_cert(@fixtures.chain_intermediate_der_hex)
+  let leaf = chain_cert(@fixtures.chain_leaf_der_hex)
+  inspect(
+    @x509.verify_certificate_signature(leaf, intermediate),
+    content="true",
+  )
+  inspect(
+    @x509.verify_certificate_signature(intermediate, root),
+    content="true",
+  )
+  inspect(@x509.verify_certificate_signature(root, root), content="true")
+  inspect(@x509.verify_certificate_signature(leaf, root), content="false")
+}

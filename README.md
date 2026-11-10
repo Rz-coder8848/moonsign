@@ -26,8 +26,9 @@
 | 签名算法 | RSA PKCS#1 v1.5、ECDSA P-256，SHA-256 |
 | 签名格式 | PAdES B-B（`ETSI.CAdES.detached`），CMS SignedData |
 | 验签 | 检查字节范围、摘要、签名；文件被改一个字节就失败 |
+| 证书链 | `--anchors` 指定信任根，检查签名者证书能否链到它 |
 | 命令行 | `sign` / `verify` / `info` |
-| 互操作 | 生成的签名能被 OpenSSL 验证（CI 每次都跑） |
+| 互操作 | OpenSSL 与 pyHanko 双向验证（CI 每次都跑） |
 | 平台 | Linux / macOS / Windows（CI 三平台跑测试） |
 | 发布 | mooncakes.io：[Rz-coder8848/moonsign@0.1.0](https://mooncakes.io/docs/Rz-coder8848/moonsign@0.1.0) |
 
@@ -68,6 +69,25 @@ Result: VALID
 ```
 
 如果有人改了 PDF 里的内容，`verify` 会输出 `INVALID`，并以退出码 2 结束，方便脚本判断。
+
+### 检查"这张证书是不是可信的"
+
+只看签名，只能说明"文件和证书对得上"。要判断签名者是不是你信任的机构，需要给出信任根：
+
+```sh
+# 签名时把中间证书一起放进去
+moon run cmd/moonsign -- sign blank.pdf --key leaf.key --cert leaf.crt \
+  --chain intermediate.crt --out chain-signed.pdf
+
+# 验签时指定你信任的根证书
+moon run cmd/moonsign -- verify chain-signed.pdf --anchors root-ca.crt
+```
+
+结果有三种：
+
+- `VALID and TRUSTED`：签名有效，且证书链能走到你给的根（退出码 0）；
+- `VALID but NOT TRUSTED`：签名有效，但链不到你给的根（退出码 3）；
+- `INVALID`：文件被改过或签名不对（退出码 2）。
 
 ## 在代码里使用
 

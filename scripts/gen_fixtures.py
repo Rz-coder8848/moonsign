@@ -84,8 +84,74 @@ def even_hex(value: str) -> str:
     return value if len(value) % 2 == 0 else '0' + value
 
 
+def ensure_chain() -> None:
+    """Generate a root -> intermediate -> leaf RSA chain if it is missing."""
+    if (CERTS / "ca.der").exists() and (CERTS / "int.der").exists() and (
+        CERTS / "leaf.der"
+    ).exists():
+        return
+    run(
+        [
+            "req", "-x509", "-newkey", "rsa:2048", "-keyout", str(CERTS / "ca.key"),
+            "-out", str(CERTS / "ca.crt"), "-days", "3650", "-nodes",
+            "-subj", "/CN=MoonSign Test Root CA/O=MoonSign",
+            "-addext", "basicConstraints=critical,CA:TRUE",
+            "-addext", "keyUsage=critical,keyCertSign,cRLSign",
+            "-sha256",
+        ]
+    )
+    run(
+        [
+            "req", "-newkey", "rsa:2048", "-keyout", str(CERTS / "int.key"),
+            "-out", str(CERTS / "int.csr"), "-nodes",
+            "-subj", "/CN=MoonSign Test Intermediate/O=MoonSign",
+        ]
+    )
+    (CERTS / "int.ext").write_text(
+        "basicConstraints=critical,CA:TRUE,pathlen:0\n"
+        "keyUsage=critical,keyCertSign,cRLSign\n",
+        encoding="utf-8",
+    )
+    run(
+        [
+            "x509", "-req", "-in", str(CERTS / "int.csr"),
+            "-CA", str(CERTS / "ca.crt"), "-CAkey", str(CERTS / "ca.key"),
+            "-CAcreateserial", "-out", str(CERTS / "int.crt"),
+            "-days", "3000", "-sha256", "-extfile", str(CERTS / "int.ext"),
+        ]
+    )
+    run(
+        [
+            "req", "-newkey", "rsa:2048", "-keyout", str(CERTS / "leaf.key"),
+            "-out", str(CERTS / "leaf.csr"), "-nodes",
+            "-subj", "/CN=MoonSign Test Leaf/O=MoonSign",
+        ]
+    )
+    (CERTS / "leaf.ext").write_text(
+        "basicConstraints=critical,CA:FALSE\n"
+        "keyUsage=critical,digitalSignature,nonRepudiation\n",
+        encoding="utf-8",
+    )
+    run(
+        [
+            "x509", "-req", "-in", str(CERTS / "leaf.csr"),
+            "-CA", str(CERTS / "int.crt"), "-CAkey", str(CERTS / "int.key"),
+            "-CAcreateserial", "-out", str(CERTS / "leaf.crt"),
+            "-days", "2000", "-sha256", "-extfile", str(CERTS / "leaf.ext"),
+        ]
+    )
+    for name in ("ca", "int", "leaf"):
+        run(
+            [
+                "x509", "-in", str(CERTS / f"{name}.crt"), "-outform", "DER",
+                "-out", str(CERTS / f"{name}.der"),
+            ]
+        )
+
+
 def main() -> None:
     CERTS.mkdir(parents=True, exist_ok=True)
+    ensure_chain()
     message = b"MoonSign interoperability test vector\n"
     message_path = CERTS / "message.bin"
     message_path.write_bytes(message)
@@ -118,6 +184,8 @@ def main() -> None:
 
     rsa_key_der = CERTS / "rsa.key.der"
     ec_key_der = CERTS / "ec.key.der"
+    leaf_key_der = CERTS / "leaf.key.der"
+    run(["pkcs8", "-topk8", "-nocrypt", "-in", str(CERTS / "leaf.key"), "-outform", "DER", "-out", str(leaf_key_der)])
     run(["pkcs8", "-topk8", "-nocrypt", "-in", str(CERTS / "rsa.key"), "-outform", "DER", "-out", str(rsa_key_der)])
     run(["pkcs8", "-topk8", "-nocrypt", "-in", str(CERTS / "ec.key"), "-outform", "DER", "-out", str(ec_key_der)])
 
@@ -149,6 +217,14 @@ def main() -> None:
         f'pub let rsa_key_der_hex : String = "{der_hex(rsa_key_der)}"',
         "",
         f'pub let ec_key_der_hex : String = "{der_hex(ec_key_der)}"',
+        "",
+        f'pub let chain_root_der_hex : String = "{der_hex(CERTS / "ca.der")}"',
+        "",
+        f'pub let chain_intermediate_der_hex : String = "{der_hex(CERTS / "int.der")}"',
+        "",
+        f'pub let chain_leaf_der_hex : String = "{der_hex(CERTS / "leaf.der")}"',
+        "",
+        f'pub let chain_leaf_key_der_hex : String = "{der_hex(leaf_key_der)}"',
         "",
     ]
     OUT.write_text("\n".join(lines), encoding="utf-8")

@@ -8,6 +8,8 @@ import {
 // Values
 pub fn parse_certificate(Bytes) -> Certificate raise X509Error
 
+pub fn verify_certificate_signature(Certificate, Certificate) -> Bool
+
 // Errors
 pub(all) suberror X509Error {
   Der(@der.DerError)
@@ -31,9 +33,16 @@ pub(all) struct Certificate {
   public_key_bits : Bytes
   signature_algorithm_oid : String
   signature_bits : Bytes
+  is_ca : Bool
+  path_len : Int32?
+  key_cert_sign : Bool
+  has_key_usage : Bool
+  subject_key_id : Bytes?
+  authority_key_id : Bytes?
 }
 pub fn Certificate::curve_oid(Self) -> String?
 pub fn Certificate::ec_public_key(Self) -> Bytes?
+pub fn Certificate::is_self_issued(Self) -> Bool
 pub fn Certificate::is_valid_at(Self, Int64) -> Bool
 pub fn Certificate::rsa_public_key(Self) -> (Bytes, Bytes)?
 

@@ -2,6 +2,10 @@
 package "Rz-coder8848/moonsign/oids"
 
 // Values
+pub let authority_key_identifier : String
+
+pub let basic_constraints : String
+
 pub let curve_p256 : String
 
 pub let ec_public_key : String
@@ -26,6 +30,8 @@ pub let id_signing_certificate_v2 : String
 
 pub let id_signing_time : String
 
+pub let key_usage : String
+
 pub let rsa_encryption : String
 
 pub let sha1 : String
@@ -49,6 +55,8 @@ pub let sm2 : String
 pub let sm2_with_sm3 : String
 
 pub let sm3 : String
+
+pub let subject_key_identifier : String
 
 // Errors
 

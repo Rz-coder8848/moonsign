@@ -1,0 +1,33 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "Rz-coder8848/moonsign/trust"
+
+import {
+  "Rz-coder8848/moonsign/x509",
+}
+
+// Values
+pub fn build_chain(@x509.Certificate, Array[@x509.Certificate], Array[@x509.Certificate], Int64) -> Chain raise TrustError
+
+// Errors
+pub(all) suberror TrustError {
+  X509(@x509.X509Error)
+  NoCertificate
+  IssuerNotFound
+  NotACertificateAuthority
+  PathLengthExceeded
+  Expired
+  NotYetValid
+  SignatureInvalid
+  LoopDetected
+}
+pub fn TrustError::message(Self) -> String
+
+// Types and methods
+pub(all) struct Chain {
+  certificates : Array[@x509.Certificate]
+  trusted : Bool
+}
+
+// Type aliases
+
+// Traits

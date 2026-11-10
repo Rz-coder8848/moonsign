@@ -39,6 +39,13 @@ fn read_oid(reader : @der.DerReader) -> String raise X509Error {
 }
 
 ///|
+fn read_int(reader : @der.DerReader) -> Int32 raise X509Error {
+  reader.read_integer_int() catch {
+    e => raise X509Error::Der(e)
+  }
+}
+
+///|
 /// A parsed X.509 certificate.
 ///
 /// Raw DER fields are kept so they can be embedded into CMS structures without
@@ -56,6 +63,12 @@ pub(all) struct Certificate {
   public_key_bits : Bytes
   signature_algorithm_oid : String
   signature_bits : Bytes
+  is_ca : Bool
+  path_len : Int32?
+  key_cert_sign : Bool
+  has_key_usage : Bool
+  subject_key_id : Bytes?
+  authority_key_id : Bytes?
 }
 
 ///|
@@ -66,6 +79,58 @@ fn parse_algorithm_identifier(
   let oid = read_oid(seq)
   let params = if seq.is_empty() { None } else { Some(read_tlv(seq).raw) }
   (oid, params)
+}
+
+///|
+fn parse_basic_constraints(bytes : Bytes) -> (Bool, Int32?) raise X509Error {
+  let reader = @der.DerReader::new(bytes)
+  let sequence = read_seq(reader)
+  let mut is_ca = false
+  let mut path_len : Int32? = None
+  match sequence.peek_tag() {
+    Some(tag) =>
+      if tag == 0x01 {
+        let value = read_tlv(sequence)
+        is_ca = value.content.length() > 0 && value.content[0].to_int() != 0
+      }
+    None => ()
+  }
+  match sequence.peek_tag() {
+    Some(tag) => if tag == 0x02 { path_len = Some(read_int(sequence)) }
+    None => ()
+  }
+  (is_ca, path_len)
+}
+
+///|
+fn parse_key_usage(bytes : Bytes) -> Bool raise X509Error {
+  let reader = @der.DerReader::new(bytes)
+  let bits = read_expected(reader, @der.tag_bit_string)
+  if bits.content.length() < 2 {
+    return false
+  }
+  // KeyUsage bit 5 is keyCertSign; bits are MSB-first in the first data octet.
+  (bits.content[1].to_int() & 0x04) != 0
+}
+
+///|
+fn parse_subject_key_identifier(bytes : Bytes) -> Bytes? raise X509Error {
+  let reader = @der.DerReader::new(bytes)
+  let value = read_expected(reader, @der.tag_octet_string)
+  Some(value.content)
+}
+
+///|
+fn parse_authority_key_identifier(bytes : Bytes) -> Bytes? raise X509Error {
+  let reader = @der.DerReader::new(bytes)
+  let sequence = read_seq(reader)
+  while !sequence.is_empty() {
+    let value = read_tlv(sequence)
+    if value.tag == 0x80 {
+      return Some(value.content)
+    }
+  }
+  None
 }
 
 ///|
@@ -124,6 +189,50 @@ pub fn parse_certificate(der : Bytes) -> Certificate raise X509Error {
   for i in 0..<key_len {
     key_bytes[i] = bits.content[i + 1]
   }
+  let mut is_ca = false
+  let mut path_len : Int32? = None
+  let mut key_cert_sign = false
+  let mut has_key_usage = false
+  let mut subject_key_id : Bytes? = None
+  let mut authority_key_id : Bytes? = None
+  match tbs_reader.peek_tag() {
+    Some(tag) =>
+      if tag == 0xA3 {
+        let wrapper = read_tlv(tbs_reader)
+        let extension_reader = @der.DerReader::at(
+          wrapper.content,
+          0,
+          wrapper.content.length(),
+        ) catch {
+          e => raise X509Error::Der(e)
+        }
+        let extensions = read_seq(extension_reader)
+        while !extensions.is_empty() {
+          let extension = read_seq(extensions)
+          let oid = read_oid(extension)
+          match extension.peek_tag() {
+            Some(1) => {
+              let _ = read_tlv(extension)
+            }
+            _ => ()
+          }
+          let value = read_expected(extension, @der.tag_octet_string)
+          if oid == @oids.basic_constraints {
+            let (ca, limit) = parse_basic_constraints(value.content)
+            is_ca = ca
+            path_len = limit
+          } else if oid == @oids.key_usage {
+            has_key_usage = true
+            key_cert_sign = parse_key_usage(value.content)
+          } else if oid == @oids.subject_key_identifier {
+            subject_key_id = parse_subject_key_identifier(value.content)
+          } else if oid == @oids.authority_key_identifier {
+            authority_key_id = parse_authority_key_identifier(value.content)
+          }
+        }
+      }
+    None => ()
+  }
   {
     der,
     tbs_raw: tbs.raw,
@@ -137,6 +246,12 @@ pub fn parse_certificate(der : Bytes) -> Certificate raise X509Error {
     public_key_bits: Bytes::from_array(key_bytes[:]),
     signature_algorithm_oid: signature_algorithm.0,
     signature_bits: signature_value.content,
+    is_ca,
+    path_len,
+    key_cert_sign,
+    has_key_usage,
+    subject_key_id,
+    authority_key_id,
   }
 }
 
@@ -190,6 +305,87 @@ pub fn Certificate::ec_public_key(self : Certificate) -> Bytes? {
     return None
   }
   Some(self.public_key_bits)
+}
+
+///|
+/// Whether the subject and issuer names are identical (self-issued).
+pub fn Certificate::is_self_issued(self : Certificate) -> Bool {
+  @der.der_bytes_compare(self.subject_raw, self.issuer_raw) == 0
+}
+
+///|
+fn is_rsa_signature(oid : String) -> Bool {
+  oid == @oids.sha1_with_rsa ||
+  oid == @oids.sha256_with_rsa ||
+  oid == @oids.sha384_with_rsa ||
+  oid == @oids.sha512_with_rsa
+}
+
+///|
+fn is_ecdsa_signature(oid : String) -> Bool {
+  oid == @oids.ecdsa_with_sha256 ||
+  oid == @oids.ecdsa_with_sha384 ||
+  oid == @oids.ecdsa_with_sha512
+}
+
+///|
+fn signature_hash(oid : String) -> @crypto.Hash? {
+  if oid == @oids.sha1_with_rsa {
+    Some(@crypto.Hash::Sha1)
+  } else if oid == @oids.sha256_with_rsa || oid == @oids.ecdsa_with_sha256 {
+    Some(@crypto.Hash::Sha256)
+  } else if oid == @oids.sha384_with_rsa {
+    Some(@crypto.Hash::Sha384)
+  } else if oid == @oids.sha512_with_rsa {
+    Some(@crypto.Hash::Sha512)
+  } else {
+    None
+  }
+}
+
+///|
+/// Verify that `cert` was signed by `issuer`.
+///
+/// This checks the certificate signature only; validity, CA status and name
+/// chaining are the caller's job (see the `trust` package).
+pub fn verify_certificate_signature(
+  cert : Certificate,
+  issuer : Certificate,
+) -> Bool {
+  let hash = match signature_hash(cert.signature_algorithm_oid) {
+    Some(value) => value
+    None => return false
+  }
+  if cert.signature_bits.length() < 2 {
+    return false
+  }
+  let signature_length = cert.signature_bits.length() - 1
+  let signature = Array::make(signature_length, b'\x00')
+  for i in 0..<signature_length {
+    signature[i] = cert.signature_bits[i + 1]
+  }
+  let signature_bytes = Bytes::from_array(signature[:])
+  if is_rsa_signature(cert.signature_algorithm_oid) {
+    match issuer.rsa_public_key() {
+      Some((modulus, exponent)) =>
+        @crypto.verify_rsa_pkcs1(
+          hash,
+          cert.tbs_raw,
+          signature_bytes,
+          modulus,
+          exponent,
+        )
+      None => false
+    }
+  } else if is_ecdsa_signature(cert.signature_algorithm_oid) {
+    match issuer.ec_public_key() {
+      Some(point) =>
+        @crypto.verify_ecdsa_p256(hash, cert.tbs_raw, signature_bytes, point)
+      None => false
+    }
+  } else {
+    false
+  }
 }
 
 ///|

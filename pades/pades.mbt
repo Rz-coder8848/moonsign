@@ -175,3 +175,74 @@ pub fn PadesError::message(self : PadesError) -> String {
     ByteRangeMismatch => "signature ByteRange is malformed"
   }
 }
+
+///|
+/// Outcome of verifying a PDF signature together with certificate trust.
+pub(all) struct VerifyOutcome {
+  /// The CMS signature and the covered bytes are intact.
+  signature_valid : Bool
+  /// Certificate that produced the signature, when it could be located.
+  signer : @x509.Certificate?
+  /// Verified path to a trust anchor, when anchors were supplied.
+  chain : @trust.Chain?
+  /// Why the chain could not be built (only when anchors were supplied).
+  trust_error : String?
+}
+
+///|
+/// Verify a PDF signature and, when `anchors` is non-empty, build a chain from
+/// the signer certificate to one of those anchors at `at_time`.
+pub fn verify_pdf_with_anchors(
+  pdf_bytes : Bytes,
+  anchors : Array[@x509.Certificate],
+  at_time : Int64,
+) -> VerifyOutcome raise PadesError {
+  let signatures = @pdf.find_signatures(pdf_bytes)
+  if signatures.length() == 0 {
+    raise PadesError::NoSignature
+  }
+  let signature = signatures[0]
+  let parts = match @pdf.bytes_for_signature(pdf_bytes, signature) {
+    Some(value) => value
+    None => raise PadesError::ByteRangeMismatch
+  }
+  let signed_data = @cms.parse_signed_data(signature.contents) catch {
+    e => raise PadesError::Cms(e)
+  }
+  if signed_data.signer_infos.length() == 0 {
+    raise PadesError::NoSignature
+  }
+  let signer_info = signed_data.signer_infos[0]
+  let signer = match @cms.signer_certificate(signed_data, signer_info) {
+    Some(value) => value
+    None => raise PadesError::NoSignature
+  }
+  let hash = match @crypto.Hash::from_oid(signer_info.digest_oid) {
+    Some(value) => value
+    None => raise PadesError::UnsupportedDigest(signer_info.digest_oid)
+  }
+  let digest = @crypto.digest_parts(hash, parts)
+  let signature_valid = @cms.verify_signer(signer_info, signer, digest)
+  let mut chain : @trust.Chain? = None
+  let mut trust_error : String? = None
+  if anchors.length() > 0 {
+    let intermediates : Array[@x509.Certificate] = []
+    for der in signed_data.certificates {
+      if @der.der_bytes_compare(der, signer.der) == 0 {
+        continue
+      }
+      let parsed = @x509.parse_certificate(der) catch { _ => continue }
+      intermediates.push(parsed)
+    }
+    let built : Result[@trust.Chain, String] = Ok(
+      @trust.build_chain(signer, intermediates, anchors, at_time),
+    ) catch {
+      e => Err(e.message())
+    }
+    match built {
+      Ok(value) => chain = Some(value)
+      Err(message) => trust_error = Some(message)
+    }
+  }
+  { signature_valid, signer: Some(signer), chain, trust_error, }
+}

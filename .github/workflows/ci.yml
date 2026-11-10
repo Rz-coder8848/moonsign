@@ -84,6 +84,20 @@ jobs:
           moon run cmd/moonsign -- info signed.pdf
           moon run cmd/moonsign -- sign blank.pdf --out signed-json.pdf --key key.pem --cert cert.pem --json
           python3 scripts/verify_pdf_signature.py signed.pdf
+      - name: Certificate chain trust
+        run: |
+          cat testdata/certs/int.crt testdata/certs/ca.crt > chain.pem
+          moon run cmd/moonsign -- sign blank.pdf --out chain-signed.pdf \
+            --key testdata/certs/leaf.key --cert testdata/certs/leaf.crt --chain chain.pem
+          moon run cmd/moonsign -- verify chain-signed.pdf --anchors testdata/certs/ca.crt
+          set +e
+          moon run cmd/moonsign -- verify chain-signed.pdf --anchors testdata/certs/rsa.crt
+          code=$?
+          set -e
+          if [ "$code" -ne 3 ]; then
+            echo "expected exit 3 (valid but untrusted), got $code"
+            exit 1
+          fi
 
   pyhanko:
     name: interop (pyHanko)

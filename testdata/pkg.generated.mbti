@@ -4,6 +4,14 @@ package "Rz-coder8848/moonsign/testdata"
 // Values
 pub fn bytes_of_hex(String) -> Bytes
 
+pub let chain_intermediate_der_hex : String
+
+pub let chain_leaf_der_hex : String
+
+pub let chain_leaf_key_der_hex : String
+
+pub let chain_root_der_hex : String
+
 pub let ec_cert_der_hex : String
 
 pub let ec_key_der_hex : String
