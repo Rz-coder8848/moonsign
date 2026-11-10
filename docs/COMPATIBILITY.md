@@ -30,7 +30,8 @@
 | BasicConstraints（CA、pathLen） | ✅ |
 | KeyUsage（keyCertSign） | ✅ |
 | 证书有效期 | ✅ |
-| CRL / OCSP 吊销检查 | ❌（0.3 计划） |
+| CRL 吊销检查 | ✅ `--crl`（校验 CRL 签名与有效期） |
+| OCSP 吊销检查 | ❌（后续） |
 | AIA 自动下载中间证书 | ❌ |
 
 ## 验证器

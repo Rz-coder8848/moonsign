@@ -2,7 +2,7 @@
 
 用纯 MoonBit 写的 PDF 数字签名工具：**给 PDF 签名，并验证它有没有被改过。**
 
-> 当前是 0.2 开发版，功能可用但还不适合直接用于有法律效力的正式签署。
+> 当前是 0.3 开发版，功能可用但还不适合直接用于有法律效力的正式签署。
 
 ## 它解决什么问题
 
@@ -27,14 +27,15 @@
 | 签名格式 | PAdES B-B（`ETSI.CAdES.detached`），CMS SignedData |
 | 验签 | 检查字节范围、摘要、签名；文件被改一个字节就失败 |
 | 证书链 | `--anchors` 指定信任根，检查签名者证书能否链到它 |
+| 吊销检查 | `--crl` 指定 CRL（PEM），拒绝已被吊销的证书 |
 | 命令行 | `sign` / `verify` / `info` |
 | 互操作 | OpenSSL 与 pyHanko 双向验证（CI 每次都跑） |
 | 平台 | Linux / macOS / Windows（CI 三平台跑测试） |
-| 发布 | mooncakes.io：[Rz-coder8848/moonsign@0.2.0](https://mooncakes.io/docs/Rz-coder8848/moonsign@0.2.0) |
+| 发布 | mooncakes.io：[Rz-coder8848/moonsign@0.3.0](https://mooncakes.io/docs/Rz-coder8848/moonsign@0.3.0) |
 
 ## 快速开始
 
-作为依赖使用：`moon add Rz-coder8848/moonsign@0.2.0`。
+作为依赖使用：`moon add Rz-coder8848/moonsign@0.3.0`。
 
 先准备一张空白 PDF 和一张测试证书（正式使用请换成你自己的证书）：
 
@@ -88,6 +89,17 @@ moon run cmd/moonsign -- verify chain-signed.pdf --anchors root-ca.crt
 - `VALID and TRUSTED`：签名有效，且证书链能走到你给的根（退出码 0）；
 - `VALID but NOT TRUSTED`：签名有效，但链不到你给的根（退出码 3）；
 - `INVALID`：文件被改过或签名不对（退出码 2）。
+
+### 检查证书有没有被吊销
+
+如果签发机构把证书作废了，可以附上一份 CRL（证书吊销列表）：
+
+```sh
+moon run cmd/moonsign -- verify signed.pdf \
+  --anchors root-ca.pem --crl issuer.crl.pem
+```
+
+证书被吊销时，结果会是 `VALID but NOT TRUSTED`，原因写 `certificate has been revoked`（退出码 3）。
 
 ## 在代码里使用
 
