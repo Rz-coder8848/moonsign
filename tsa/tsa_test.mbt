@@ -24,9 +24,18 @@ test "timestamp request round trip" {
 ///|
 fn fake_token(signature : Bytes) -> Bytes {
   let cert = @x509.parse_certificate(
-    @fixtures.bytes_of_hex(@fixtures.rsa_cert_der_hex),
+    @fixtures.bytes_of_hex(@fixtures.tsa_cert_der_hex),
   ) catch {
     _ => abort("tsa cert")
+  }
+  let key = @pem.parse_private_key(
+    @fixtures.bytes_of_hex(@fixtures.tsa_key_der_hex),
+  ) catch {
+    _ => abort("tsa key")
+  }
+  let private_exponent = match key {
+    @pem.PrivateKey::Rsa(_, d) => d
+    _ => abort("expected an RSA TSA key")
   }
   let digest = @crypto.digest(@crypto.Hash::Sha256, signature)
   let tst_info = @der.der_sequence([
@@ -55,7 +64,7 @@ fn fake_token(signature : Bytes) -> Bytes {
     @crypto.Hash::Sha256,
     attrs,
     modulus,
-    @fixtures.bytes_of_hex(@fixtures.rsa_d_hex),
+    private_exponent,
   ) catch {
     _ => abort("tsa sign")
   }
@@ -99,4 +108,34 @@ test "timestamp response parsing and imprint" {
     ),
     content="false",
   )
+}
+
+///|
+test "timestamp token signature and chain" {
+  let signature = test_signature()
+  let token = fake_token(signature)
+  let signer = match @tsa.verify_token_signature(token) {
+    Some(value) => value
+    None => fail("timestamp token signature does not verify")
+  }
+  inspect(
+    signer.has_extended_key_usage(@oids.id_kp_time_stamping),
+    content="true",
+  )
+  let chain = @tsa.verify_token_chain(token, [signer], 1794500000L) catch {
+    e => fail(e.message())
+  }
+  inspect(chain.trusted, content="true")
+  let other = @x509.parse_certificate(
+    @fixtures.bytes_of_hex(@fixtures.rsa_cert_der_hex),
+  ) catch {
+    _ => abort("other cert")
+  }
+  let failed = try {
+    let _ = @tsa.verify_token_chain(token, [other], 1794500000L)
+    false
+  } catch {
+    _ => true
+  }
+  inspect(failed, content="true")
 }

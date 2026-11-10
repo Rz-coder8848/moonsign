@@ -44,9 +44,11 @@ pub(all) struct Certificate {
   has_key_usage : Bool
   subject_key_id : Bytes?
   authority_key_id : Bytes?
+  extended_key_usage : Array[String]
 }
 pub fn Certificate::curve_oid(Self) -> String?
 pub fn Certificate::ec_public_key(Self) -> Bytes?
+pub fn Certificate::has_extended_key_usage(Self, String) -> Bool
 pub fn Certificate::is_self_issued(Self) -> Bool
 pub fn Certificate::is_valid_at(Self, Int64) -> Bool
 pub fn Certificate::rsa_public_key(Self) -> (Bytes, Bytes)?

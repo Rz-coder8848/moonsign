@@ -129,3 +129,11 @@ pub let id_ct_tst_info : String = "1.2.840.113549.1.9.16.1.4"
 ///|
 /// id-aa-signatureTimeStampToken (1.2.840.113549.1.9.16.2.14)
 pub let id_aa_signature_time_stamp : String = "1.2.840.113549.1.9.16.2.14"
+
+///|
+/// Extended Key Usage extension (2.5.29.37)
+pub let extended_key_usage : String = "2.5.29.37"
+
+///|
+/// id-kp-timeStamping (1.3.6.1.5.5.7.3.8)
+pub let id_kp_time_stamping : String = "1.3.6.1.5.5.7.3.8"

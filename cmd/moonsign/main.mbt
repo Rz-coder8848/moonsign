@@ -630,6 +630,29 @@ fn tsa_embed_impl(args : Array[String]) -> Unit raise CliError {
   if !@tsa.verify_token(token, signer.signature, hash) {
     raise CliError::Failure("timestamp token does not match this signature")
   }
+  match options.anchors {
+    Some(path) => {
+      let anchors_text = read_text(path)
+      let anchors = @pem.parse_certificates(anchors_text) catch {
+        e => raise CliError::Failure("cannot parse TSA anchors: " + e.message())
+      }
+      if anchors.length() == 0 {
+        raise CliError::Failure("no CERTIFICATE block found in " + path)
+      }
+      let chain = @tsa.verify_token_chain(token, anchors, now_seconds()) catch {
+        e => raise CliError::Failure(e.message())
+      }
+      println(
+        "TSA chain: " +
+        chain.certificates.length().to_string() +
+        " certificates (trusted)",
+      )
+    }
+    None =>
+      println(
+        "Note: TSA certificate chain not checked (pass --anchors <tsa-ca.pem>).",
+      )
+  }
   let signer_cert = match @cms.signer_certificate(signed_data, signer) {
     Some(value) => value
     None => raise CliError::Failure("signer certificate is missing")

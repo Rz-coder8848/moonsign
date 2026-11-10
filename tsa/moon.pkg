@@ -3,6 +3,8 @@ import {
   "Rz-coder8848/moonsign/crypto",
   "Rz-coder8848/moonsign/der",
   "Rz-coder8848/moonsign/oids",
+  "Rz-coder8848/moonsign/trust",
+  "Rz-coder8848/moonsign/x509",
 }
 
 import {
@@ -10,6 +12,7 @@ import {
   "Rz-coder8848/moonsign/crypto",
   "Rz-coder8848/moonsign/der",
   "Rz-coder8848/moonsign/oids",
+  "Rz-coder8848/moonsign/pem",
   "Rz-coder8848/moonsign/testdata" @fixtures,
   "Rz-coder8848/moonsign/x509",
 } for "test"

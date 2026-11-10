@@ -147,6 +147,30 @@ def ensure_chain() -> None:
                 "-out", str(CERTS / f"{name}.der"),
             ]
         )
+    # A self-signed TSA certificate with the timeStamping extended key usage.
+    run(
+        [
+            "req", "-x509", "-newkey", "rsa:2048", "-keyout", str(CERTS / "tsa.key"),
+            "-out", str(CERTS / "tsa.crt"), "-days", "3650", "-nodes",
+            "-subj", "/CN=MoonSign Test TSA/O=MoonSign",
+            "-addext", "basicConstraints=critical,CA:FALSE",
+            "-addext", "keyUsage=critical,digitalSignature",
+            "-addext", "extendedKeyUsage=critical,timeStamping",
+            "-sha256",
+        ]
+    )
+    run(
+        [
+            "x509", "-in", str(CERTS / "tsa.crt"), "-outform", "DER",
+            "-out", str(CERTS / "tsa.der"),
+        ]
+    )
+    run(
+        [
+            "pkcs8", "-topk8", "-nocrypt", "-in", str(CERTS / "tsa.key"),
+            "-outform", "DER", "-out", str(CERTS / "tsa.key.der"),
+        ]
+    )
 
 
 def main() -> None:
@@ -225,6 +249,10 @@ def main() -> None:
         f'pub let chain_leaf_der_hex : String = "{der_hex(CERTS / "leaf.der")}"',
         "",
         f'pub let chain_leaf_key_der_hex : String = "{der_hex(leaf_key_der)}"',
+        "",
+        f'pub let tsa_cert_der_hex : String = "{der_hex(CERTS / "tsa.der")}"',
+        "",
+        f'pub let tsa_key_der_hex : String = "{der_hex(CERTS / "tsa.key.der")}"',
         "",
         f'pub let crl_der_hex : String = "{der_hex(CERTS / "crl.der")}"',
         "",

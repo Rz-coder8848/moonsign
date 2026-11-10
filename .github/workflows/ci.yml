@@ -136,7 +136,7 @@ jobs:
             -addext "keyUsage=critical,digitalSignature"
           echo 01 > tsa_serial
           openssl ts -reply -config tsa.cnf -queryfile req.der -out resp.der
-          moon run cmd/moonsign -- tsa-embed ts-base.pdf --response resp.der --out stamped.pdf
+          moon run cmd/moonsign -- tsa-embed ts-base.pdf --response resp.der --out stamped.pdf --anchors tsa.crt
           moon run cmd/moonsign -- verify stamped.pdf --cert cert.pem
       - name: Run the example
         run: bash examples/sign-and-verify/run.sh

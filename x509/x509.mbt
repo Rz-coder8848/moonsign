@@ -70,6 +70,7 @@ pub(all) struct Certificate {
   has_key_usage : Bool
   subject_key_id : Bytes?
   authority_key_id : Bytes?
+  extended_key_usage : Array[String]
 }
 
 ///|
@@ -80,6 +81,19 @@ fn parse_algorithm_identifier(
   let oid = read_oid(seq)
   let params = if seq.is_empty() { None } else { Some(read_tlv(seq).raw) }
   (oid, params)
+}
+
+///|
+
+///|
+fn parse_extended_key_usage(bytes : Bytes) -> Array[String] raise X509Error {
+  let reader = @der.DerReader::new(bytes)
+  let sequence = read_seq(reader)
+  let out : Array[String] = []
+  while !sequence.is_empty() {
+    out.push(read_oid(sequence))
+  }
+  out
 }
 
 ///|
@@ -196,6 +210,7 @@ pub fn parse_certificate(der : Bytes) -> Certificate raise X509Error {
   let mut has_key_usage = false
   let mut subject_key_id : Bytes? = None
   let mut authority_key_id : Bytes? = None
+  let mut extended_key_usage : Array[String] = []
   match tbs_reader.peek_tag() {
     Some(tag) =>
       if tag == 0xA3 {
@@ -229,6 +244,8 @@ pub fn parse_certificate(der : Bytes) -> Certificate raise X509Error {
             subject_key_id = parse_subject_key_identifier(value.content)
           } else if oid == @oids.authority_key_identifier {
             authority_key_id = parse_authority_key_identifier(value.content)
+          } else if oid == @oids.extended_key_usage {
+            extended_key_usage = parse_extended_key_usage(value.content)
           }
         }
       }
@@ -253,6 +270,7 @@ pub fn parse_certificate(der : Bytes) -> Certificate raise X509Error {
     has_key_usage,
     subject_key_id,
     authority_key_id,
+    extended_key_usage,
   }
 }
 
@@ -306,6 +324,20 @@ pub fn Certificate::ec_public_key(self : Certificate) -> Bytes? {
     return None
   }
   Some(self.public_key_bits)
+}
+
+///|
+/// Whether the certificate lists `oid` in its Extended Key Usage extension.
+pub fn Certificate::has_extended_key_usage(
+  self : Certificate,
+  oid : String,
+) -> Bool {
+  for item in self.extended_key_usage {
+    if item == oid {
+      return true
+    }
+  }
+  false
 }
 
 ///|
