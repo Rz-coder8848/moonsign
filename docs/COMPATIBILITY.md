@@ -44,6 +44,14 @@
 | TSA 证书链校验 | ✅ `tsa-embed --anchors`（含 timeStamping EKU） |
 | 直接联网调用 TSA | ❌（用 curl 等工具发送请求） |
 
+## PKCS#12
+
+| 加密方式 | 状态 |
+| --- | --- |
+| PBES2 + PBKDF2（SHA-1/SHA-256）+ AES-128/192/256-CBC | ✅ |
+| MAC：SHA-1 / SHA-256 | ✅ |
+| 旧式 RC2 / 3DES | ❌（明确报错） |
+
 ## 验证器
 
 | 验证器 | 版本 | 结果 | 方式 |

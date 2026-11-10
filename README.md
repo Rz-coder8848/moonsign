@@ -2,7 +2,7 @@
 
 用纯 MoonBit 写的 PDF 数字签名工具：**给 PDF 签名，并验证它有没有被改过。**
 
-> 当前是 0.9 开发版，功能可用但还不适合直接用于有法律效力的正式签署。
+> 当前是 0.10 开发版，功能可用但还不适合直接用于有法律效力的正式签署。
 
 ## 它解决什么问题
 
@@ -24,6 +24,7 @@
 | 能力 | 状态 |
 | --- | --- |
 | 签名算法 | RSA PKCS#1 v1.5、ECDSA P-256，SHA-256 |
+| 私钥格式 | PEM（PKCS#8/PKCS#1/SEC1）；PKCS#12（.p12/.pfx，PBES2 + AES-CBC） |
 | 签名格式 | PAdES B-B（`ETSI.CAdES.detached`），CMS SignedData；可附加 B-T 时间戳 |
 | 验签 | 检查字节范围、摘要、签名；文件被改一个字节就失败 |
 | 证书链 | `--anchors` 指定信任根，检查签名者证书能否链到它 |
@@ -33,11 +34,11 @@
 | 互操作 | OpenSSL 与 pyHanko 双向验证（CI 每次都跑） |
 | 时间戳 | RFC 3161：请求、嵌入、校验证书链（B-T）；`verify --tsa-anchors` 可复查 |
 | 平台 | Linux / macOS / Windows（CI 三平台跑测试） |
-| 发布 | mooncakes.io：[Rz-coder8848/moonsign@0.9.0](https://mooncakes.io/docs/Rz-coder8848/moonsign@0.9.0) |
+| 发布 | mooncakes.io：[Rz-coder8848/moonsign@0.10.0](https://mooncakes.io/docs/Rz-coder8848/moonsign@0.10.0) |
 
 ## 快速开始
 
-作为依赖使用：`moon add Rz-coder8848/moonsign@0.9.0`。
+作为依赖使用：`moon add Rz-coder8848/moonsign@0.10.0`。
 
 先准备一张空白 PDF 和一张测试证书（正式使用请换成你自己的证书）：
 
@@ -53,6 +54,15 @@ moon run cmd/moonsign -- verify signed.pdf --cert cert.pem
 
 moon run cmd/moonsign -- info signed.pdf
 ```
+
+如果手上是 `.p12` / `.pfx`（很多机构直接给这种）：
+
+```sh
+moon run cmd/moonsign -- sign blank.pdf --p12 cert.p12 \
+  --p12-password 你的密码 --out signed.pdf
+```
+
+密码也可以放在环境变量 `MOONSIGN_P12_PASSWORD` 里，避免出现在命令历史。
 
 签名成功会看到：
 

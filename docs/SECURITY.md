@@ -19,6 +19,8 @@
 
 时间戳（B-T）默认只校验"时间戳确实对应这次签名"；给 `tsa-embed --anchors` 时会进一步验证 TSA 签名、timeStamping EKU 和证书链，但不会检查 TSA 的运营资质或吊销状态。
 
+PKCS#12 密码可以放在 `--p12-password` 或环境变量 `MOONSIGN_P12_PASSWORD`；命令行参数会进入 shell 历史，敏感环境建议用环境变量。旧式 RC2/3DES 加密的 `.p12` 会被明确拒绝。
+
 ## 威胁模型
 
 | 攻击 | MoonSign 的表现 |

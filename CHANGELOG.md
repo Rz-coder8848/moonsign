@@ -1,5 +1,14 @@
 # 更新日志
 
+## 0.10.0（2026-11-10）
+
+- 新增 PKCS#12（.p12 / .pfx）支持：
+  - PBES2 + PBKDF2（HMAC-SHA1/SHA256）+ AES-128/192/256-CBC；
+  - 校验 MAC（SHA-1/SHA-256）；
+  - `sign --p12 <file> --p12-password <pass>`；
+  - 密码也可用 `MOONSIGN_P12_PASSWORD`；
+- 58 个测试，CI 覆盖 PKCS#12 签名路径。
+
 ## 0.9.0（2026-11-10）
 
 - 新增 `cmd/bench` 性能基准：生成 1 到 10,000 页 PDF，测签名/验签耗时；
