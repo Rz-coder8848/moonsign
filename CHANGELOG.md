@@ -1,5 +1,12 @@
 # 更新日志
 
+## 0.9.0（2026-11-10）
+
+- 新增 `cmd/bench` 性能基准：生成 1 到 10,000 页 PDF，测签名/验签耗时；
+- 新增 `pdf.paged_pdf`（生成多页空白 PDF）和 `mkpdf --pages N`；
+- CI 增加 native 基准任务；
+- 新增 `docs/PERFORMANCE.md`（含 CI 实测数据）。
+
 ## 0.8.0（2026-11-10）
 
 - 新增 OCSP 支持：
