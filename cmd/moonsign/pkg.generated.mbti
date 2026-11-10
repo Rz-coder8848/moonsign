@@ -25,6 +25,8 @@ pub(all) struct CliOptions {
   mut response : String?
   mut tsa_anchors : String?
   mut ocsp : String?
+  mut p12 : String?
+  mut p12_password : String?
   mut json : Bool
 }
 

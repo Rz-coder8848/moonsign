@@ -84,7 +84,11 @@ jobs:
           moon run cmd/moonsign -- info signed.pdf
           moon run cmd/moonsign -- sign blank.pdf --out signed-json.pdf --key key.pem --cert cert.pem --json
           python3 scripts/verify_pdf_signature.py signed.pdf
-      - name: Certificate chain trust
+      - name: Sign with a PKCS#12 file
+        run: |
+          moon run cmd/moonsign -- sign blank.pdf --out p12-signed.pdf \
+            --p12 testdata/certs/rsa.p12 --p12-password test
+          moon run cmd/moonsign -- verify p12-signed.pdf --cert testdata/certs/rsa.crt      - name: Certificate chain trust
         run: |
           cat testdata/certs/int.crt testdata/certs/ca.crt > chain.pem
           moon run cmd/moonsign -- sign blank.pdf --out chain-signed.pdf \

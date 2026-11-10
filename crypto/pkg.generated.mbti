@@ -2,9 +2,21 @@
 package "Rz-coder8848/moonsign/crypto"
 
 // Values
+pub fn aes_cbc_decrypt(Bytes, Bytes, Bytes) -> Bytes
+
+pub fn aes_cbc_decrypt_checked(Bytes, Bytes, Bytes) -> Result[Bytes, String]
+
 pub fn digest(Hash, Bytes) -> Bytes
 
 pub fn digest_parts(Hash, Array[Bytes]) -> Bytes
+
+pub fn hmac_sha1(Bytes, Bytes) -> Bytes
+
+pub fn hmac_sha256(Bytes, Bytes) -> Bytes
+
+pub fn pbkdf2_sha1(Bytes, Bytes, Int32, Int32) -> Bytes
+
+pub fn pbkdf2_sha256(Bytes, Bytes, Int32, Int32) -> Bytes
 
 pub fn sign_ecdsa_p256(Hash, Bytes, Bytes) -> Bytes raise CryptoError
 

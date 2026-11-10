@@ -141,3 +141,55 @@ pub let id_kp_time_stamping : String = "1.3.6.1.5.5.7.3.8"
 ///|
 /// id-kp-OCSPSigning (1.3.6.1.5.5.7.3.9)
 pub let id_kp_ocsp_signing : String = "1.3.6.1.5.5.7.3.9"
+
+///|
+/// PKCS#7 data (1.2.840.113549.1.7.1)
+pub let pkcs7_data : String = "1.2.840.113549.1.7.1"
+
+///|
+/// PKCS#7 encryptedData (1.2.840.113549.1.7.6)
+pub let pkcs7_encrypted_data : String = "1.2.840.113549.1.7.6"
+
+///|
+/// PKCS#12 keyBag (1.2.840.113549.1.12.10.1.1)
+pub let pkcs12_key_bag : String = "1.2.840.113549.1.12.10.1.1"
+
+///|
+/// PKCS#12 pkcs8ShroudedKeyBag (1.2.840.113549.1.12.10.1.2)
+pub let pkcs12_shrouded_key_bag : String = "1.2.840.113549.1.12.10.1.2"
+
+///|
+/// PKCS#12 certBag (1.2.840.113549.1.12.10.1.3)
+pub let pkcs12_cert_bag : String = "1.2.840.113549.1.12.10.1.3"
+
+///|
+/// PKCS#12 x509Certificate (1.2.840.113549.1.9.22.1)
+pub let pkcs12_x509_certificate : String = "1.2.840.113549.1.9.22.1"
+
+///|
+/// PBES2 (1.2.840.113549.1.5.13)
+pub let pbes2 : String = "1.2.840.113549.1.5.13"
+
+///|
+/// PBKDF2 (1.2.840.113549.1.5.12)
+pub let pbkdf2 : String = "1.2.840.113549.1.5.12"
+
+///|
+/// hmacWithSHA1 (1.2.840.113549.2.7)
+pub let hmac_with_sha1 : String = "1.2.840.113549.2.7"
+
+///|
+/// hmacWithSHA256 (1.2.840.113549.2.9)
+pub let hmac_with_sha256 : String = "1.2.840.113549.2.9"
+
+///|
+/// aes128-CBC (2.16.840.1.101.3.4.1.2)
+pub let aes128_cbc : String = "2.16.840.1.101.3.4.1.2"
+
+///|
+/// aes192-CBC (2.16.840.1.101.3.4.1.22)
+pub let aes192_cbc : String = "2.16.840.1.101.3.4.1.22"
+
+///|
+/// aes256-CBC (2.16.840.1.101.3.4.1.42)
+pub let aes256_cbc : String = "2.16.840.1.101.3.4.1.42"

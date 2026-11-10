@@ -1,0 +1,30 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "Rz-coder8848/moonsign/pkcs12"
+
+import {
+  "Rz-coder8848/moonsign/der",
+  "Rz-coder8848/moonsign/x509",
+}
+
+// Values
+pub fn parse_pkcs12(Bytes, String) -> Pkcs12 raise Pkcs12Error
+
+// Errors
+pub(all) suberror Pkcs12Error {
+  Der(@der.DerError)
+  X509(@x509.X509Error)
+  BadPassword
+  BadStructure(String)
+  Unsupported(String)
+}
+pub fn Pkcs12Error::message(Self) -> String
+
+// Types and methods
+pub(all) struct Pkcs12 {
+  certificates : Array[@x509.Certificate]
+  private_key_der : Bytes?
+}
+
+// Type aliases
+
+// Traits

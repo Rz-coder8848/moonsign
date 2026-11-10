@@ -2,6 +2,12 @@
 package "Rz-coder8848/moonsign/oids"
 
 // Values
+pub let aes128_cbc : String
+
+pub let aes192_cbc : String
+
+pub let aes256_cbc : String
+
 pub let authority_key_identifier : String
 
 pub let basic_constraints : String
@@ -19,6 +25,10 @@ pub let ecdsa_with_sha512 : String
 pub fn encode(String) -> Bytes
 
 pub let extended_key_usage : String
+
+pub let hmac_with_sha1 : String
+
+pub let hmac_with_sha256 : String
 
 pub let id_aa_signature_time_stamp : String
 
@@ -41,6 +51,22 @@ pub let id_signing_certificate_v2 : String
 pub let id_signing_time : String
 
 pub let key_usage : String
+
+pub let pbes2 : String
+
+pub let pbkdf2 : String
+
+pub let pkcs12_cert_bag : String
+
+pub let pkcs12_key_bag : String
+
+pub let pkcs12_shrouded_key_bag : String
+
+pub let pkcs12_x509_certificate : String
+
+pub let pkcs7_data : String
+
+pub let pkcs7_encrypted_data : String
 
 pub let rsa_encryption : String
 

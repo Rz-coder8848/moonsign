@@ -42,6 +42,8 @@ pub let rsa_key_der_hex : String
 
 pub let rsa_n_hex : String
 
+pub let rsa_p12_der_hex : String
+
 pub let tsa_cert_der_hex : String
 
 pub let tsa_key_der_hex : String

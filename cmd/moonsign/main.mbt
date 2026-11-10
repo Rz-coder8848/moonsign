@@ -39,6 +39,10 @@ fn usage() -> Unit {
   println("  --crl <path>      CRLs (PEM) used to check revocation")
   println("  --tsa-anchors <path>  trust anchors for the timestamp (B-T)")
   println("  --ocsp <path>     OCSP response (DER) to check revocation")
+  println("  --p12 <path>      PKCS#12 file (instead of --key/--cert)")
+  println(
+    "  --p12-password <text>  PKCS#12 password (or MOONSIGN_P12_PASSWORD)",
+  )
   println("  --field <name>    signature field name (default: Signature1)")
   println("  --reason <text>   reason recorded in the signature dictionary")
   println("  --location <text> signing location")
@@ -79,6 +83,8 @@ pub(all) struct CliOptions {
   mut response : String?
   mut tsa_anchors : String?
   mut ocsp : String?
+  mut p12 : String?
+  mut p12_password : String?
   mut json : Bool
 }
 
@@ -108,6 +114,8 @@ fn parse_options(args : Array[String]) -> CliOptions raise CliError {
     response: None,
     tsa_anchors: None,
     ocsp: None,
+    p12: None,
+    p12_password: None,
     json: false,
   }
   let mut index = 0
@@ -129,7 +137,9 @@ fn parse_options(args : Array[String]) -> CliOptions raise CliError {
       arg == "--signing-time" ||
       arg == "--response" ||
       arg == "--tsa-anchors" ||
-      arg == "--ocsp" {
+      arg == "--ocsp" ||
+      arg == "--p12" ||
+      arg == "--p12-password" {
       if index + 1 >= args.length() {
         raise CliError::Failure("missing value for " + arg)
       }
@@ -160,6 +170,10 @@ fn parse_options(args : Array[String]) -> CliOptions raise CliError {
         options.tsa_anchors = Some(value)
       } else if arg == "--ocsp" {
         options.ocsp = Some(value)
+      } else if arg == "--p12" {
+        options.p12 = Some(value)
+      } else if arg == "--p12-password" {
+        options.p12_password = Some(value)
       } else {
         options.field = value
       }
@@ -231,45 +245,89 @@ fn default_output(input : String) -> String {
 }
 
 ///|
-fn sign_impl(args : Array[String]) -> Unit raise CliError {
-  let options = parse_options(args)
-  let input = require(options.input, "input PDF")
-  let key_path = require(options.key, "private key (--key)")
-  let cert_path = require(options.cert, "certificate (--cert)")
-  let out_path = match options.out {
-    Some(path) => path
-    None => default_output(input)
+fn signing_key_of(key : @pem.PrivateKey) -> @pades.SigningKey {
+  match key {
+    @pem.PrivateKey::Rsa(modulus, private_exponent) =>
+      @pades.SigningKey::Rsa(modulus, private_exponent)
+    @pem.PrivateKey::EcdsaP256(scalar) => @pades.SigningKey::EcdsaP256(scalar)
   }
-  let pdf_bytes = read_bytes(input)
-  let key_text = read_text(key_path)
-  let cert_text = read_text(cert_path)
-  let key_blocks = @pem.parse_pem(key_text) catch {
-    e => raise CliError::Failure("cannot parse key PEM: " + e.message())
-  }
-  let mut private_key : @pem.PrivateKey? = None
-  for block in key_blocks {
-    if block.label.contains("PRIVATE KEY") {
-      let parsed = @pem.parse_private_key(block.der) catch {
-        e => raise CliError::Failure("cannot parse private key: " + e.message())
+}
+
+///|
+fn load_material(
+  options : CliOptions,
+) -> (@pades.SigningKey, @x509.Certificate, Array[Bytes]) raise CliError {
+  let (key, leaf, extra) = match options.p12 {
+    Some(path) => {
+      let password = match options.p12_password {
+        Some(value) => value
+        None =>
+          match @env.get_env_var("MOONSIGN_P12_PASSWORD") {
+            Some(value) => value
+            None =>
+              raise CliError::Failure(
+                "--p12 needs --p12-password or MOONSIGN_P12_PASSWORD",
+              )
+          }
       }
-      private_key = Some(parsed)
-      break
+      let p12_bytes = read_bytes(path)
+      let bundle = @pkcs12.parse_pkcs12(p12_bytes, password) catch {
+        e => raise CliError::Failure("cannot parse PKCS#12: " + e.message())
+      }
+      if bundle.certificates.length() == 0 {
+        raise CliError::Failure("PKCS#12 file has no certificate")
+      }
+      let key_der = match bundle.private_key_der {
+        Some(value) => value
+        None => raise CliError::Failure("PKCS#12 file has no private key")
+      }
+      let private_key = @pem.parse_private_key(key_der) catch {
+        e => raise CliError::Failure("cannot parse PKCS#12 key: " + e.message())
+      }
+      let extras : Array[Bytes] = []
+      for i in 1..<bundle.certificates.length() {
+        extras.push(bundle.certificates[i].der)
+      }
+      (private_key, bundle.certificates[0], extras)
     }
-  }
-  let key = match private_key {
-    Some(value) => value
-    None => raise CliError::Failure("no private key block found in " + key_path)
-  }
-  let certs = @pem.parse_certificates(cert_text) catch {
-    e => raise CliError::Failure("cannot parse certificate: " + e.message())
-  }
-  if certs.length() == 0 {
-    raise CliError::Failure("no CERTIFICATE block found in " + cert_path)
-  }
-  let leaf = certs[0]
-  let extra : Array[Bytes] = []
-  for i in 1..<certs.length() {
-    extra.push(certs[i].der)
+    None => {
+      let key_path = require(options.key, "private key (--key)")
+      let cert_path = require(options.cert, "certificate (--cert)")
+      let key_text = read_text(key_path)
+      let cert_text = read_text(cert_path)
+      let key_blocks = @pem.parse_pem(key_text) catch {
+        e => raise CliError::Failure("cannot parse key PEM: " + e.message())
+      }
+      let mut private_key : @pem.PrivateKey? = None
+      for block in key_blocks {
+        if block.label.contains("PRIVATE KEY") {
+          let parsed = @pem.parse_private_key(block.der) catch {
+            e =>
+              raise CliError::Failure(
+                "cannot parse private key: " + e.message(),
+              )
+          }
+          private_key = Some(parsed)
+          break
+        }
+      }
+      let key = match private_key {
+        Some(value) => value
+        None =>
+          raise CliError::Failure("no private key block found in " + key_path)
+      }
+      let certs = @pem.parse_certificates(cert_text) catch {
+        e => raise CliError::Failure("cannot parse certificate: " + e.message())
+      }
+      if certs.length() == 0 {
+        raise CliError::Failure("no CERTIFICATE block found in " + cert_path)
+      }
+      let extras : Array[Bytes] = []
+      for i in 1..<certs.length() {
+        extras.push(certs[i].der)
+      }
+      (key, certs[0], extras)
+    }
   }
   match options.chain {
     Some(path) => {
@@ -283,11 +341,19 @@ fn sign_impl(args : Array[String]) -> Unit raise CliError {
     }
     None => ()
   }
-  let signing_key = match key {
-    @pem.PrivateKey::Rsa(modulus, private_exponent) =>
-      @pades.SigningKey::Rsa(modulus, private_exponent)
-    @pem.PrivateKey::EcdsaP256(scalar) => @pades.SigningKey::EcdsaP256(scalar)
+  (signing_key_of(key), leaf, extra)
+}
+
+///|
+fn sign_impl(args : Array[String]) -> Unit raise CliError {
+  let options = parse_options(args)
+  let input = require(options.input, "input PDF")
+  let out_path = match options.out {
+    Some(path) => path
+    None => default_output(input)
   }
+  let pdf_bytes = read_bytes(input)
+  let (signing_key, leaf, extra) = load_material(options)
   let signing_time = match options.signing_time {
     Some(text) => parse_unix(text)
     None => now_seconds()

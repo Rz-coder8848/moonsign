@@ -242,6 +242,8 @@ def main() -> None:
         "",
         f'pub let ec_key_der_hex : String = "{der_hex(ec_key_der)}"',
         "",
+        f'pub let rsa_p12_der_hex : String = "{der_hex(CERTS / "rsa.p12")}"',
+        "",
         f'pub let chain_root_der_hex : String = "{der_hex(CERTS / "ca.der")}"',
         "",
         f'pub let chain_intermediate_der_hex : String = "{der_hex(CERTS / "int.der")}"',
