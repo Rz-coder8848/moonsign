@@ -154,6 +154,15 @@ jobs:
       - name: Run the example
         run: bash examples/sign-and-verify/run.sh
 
+  bench:
+    name: benchmark (native)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-moonbit
+      - name: Sign and verify increasing PDF sizes
+        run: moon run --release cmd/bench | tee bench.txt
   pyhanko:
     name: interop (pyHanko)
     runs-on: ubuntu-latest

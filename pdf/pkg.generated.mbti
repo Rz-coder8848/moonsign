@@ -16,6 +16,8 @@ pub fn find_signatures(Bytes) -> Array[PdfSignature]
 
 pub fn locate(Bytes, Int32) -> SignatureSlot raise PdfSignError
 
+pub fn paged_pdf(Int32) -> Bytes
+
 pub fn prepare(Bytes, String, Int32, reason? : String, location? : String, contact? : String, signing_time? : Int64) -> Bytes raise PdfSignError
 
 pub fn replace_contents(Bytes, Bytes) -> Bytes raise PdfSignError
