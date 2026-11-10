@@ -1,0 +1,15 @@
+import {
+  "Rz-coder8848/moonsign/cms",
+  "Rz-coder8848/moonsign/crypto",
+  "Rz-coder8848/moonsign/der",
+  "Rz-coder8848/moonsign/oids",
+}
+
+import {
+  "Rz-coder8848/moonsign/cms",
+  "Rz-coder8848/moonsign/crypto",
+  "Rz-coder8848/moonsign/der",
+  "Rz-coder8848/moonsign/oids",
+  "Rz-coder8848/moonsign/testdata" @fixtures,
+  "Rz-coder8848/moonsign/x509",
+} for "test"

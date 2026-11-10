@@ -121,3 +121,11 @@ pub fn encode(dotted : String) -> Bytes {
     _ => abort("invalid OID constant: \{dotted}")
   }
 }
+
+///|
+/// id-ct-TSTInfo (1.2.840.113549.1.9.16.1.4)
+pub let id_ct_tst_info : String = "1.2.840.113549.1.9.16.1.4"
+
+///|
+/// id-aa-signatureTimeStampToken (1.2.840.113549.1.9.16.2.14)
+pub let id_aa_signature_time_stamp : String = "1.2.840.113549.1.9.16.2.14"

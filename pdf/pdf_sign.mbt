@@ -579,3 +579,56 @@ pub fn add_empty_signature_field(
   append_annotation(doc, page_number, field_number)
   ensure_acroform(doc, field_number)
 }
+
+///|
+fn is_pdf_whitespace(value : Byte) -> Bool {
+  let code = value.to_int()
+  code == 32 || code == 9 || code == 10 || code == 13
+}
+
+///|
+/// Replace the hex `/Contents` of an existing signature in place.
+///
+/// The new CMS must fit in the reserved capacity; `/ByteRange` is not changed,
+/// so the original signature remains valid when only unsigned attributes are
+/// added.
+pub fn replace_contents(pdf : Bytes, cms_der : Bytes) -> Bytes raise PdfSignError {
+  let key = @utf8.encode("/Contents")
+  let key_pos = match find_bytes(pdf, key, 0) {
+    Some(pos) => pos
+    None => raise PdfSignError::PlaceholderMissing
+  }
+  let mut pos = key_pos + key.length()
+  while pos < pdf.length() && is_pdf_whitespace(pdf[pos]) {
+    pos = pos + 1
+  }
+  if pos >= pdf.length() || pdf[pos].to_int() != 60 {
+    raise PdfSignError::PlaceholderMissing
+  }
+  let open_pos = pos
+  let mut close = open_pos + 1
+  while close < pdf.length() && pdf[close].to_int() != 62 {
+    close = close + 1
+  }
+  if close >= pdf.length() {
+    raise PdfSignError::PlaceholderMissing
+  }
+  let capacity = close - open_pos - 1
+  let hex_chars = cms_der.length() * 2
+  if hex_chars > capacity {
+    raise PdfSignError::PlaceholderTooSmall(capacity, hex_chars)
+  }
+  let out = Array::make(pdf.length(), b'\x00')
+  for i in 0..<pdf.length() {
+    out[i] = pdf[i]
+  }
+  for i in 0..<hex_chars {
+    let byte = cms_der[i / 2].to_int()
+    let digit = if i % 2 == 0 { byte / 16 } else { byte % 16 }
+    out[open_pos + 1 + i] = hex_digit(digit).to_int().to_byte()
+  }
+  for i in hex_chars..<capacity {
+    out[open_pos + 1 + i] = b'0'
+  }
+  Bytes::from_array(out[:])
+}

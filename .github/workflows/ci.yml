@@ -107,7 +107,37 @@ jobs:
             echo "expected exit 3 (revoked), got $code"
             exit 1
           fi
-      - name: Run the example
+      - name: RFC 3161 timestamp (OpenSSL TSA)
+        run: |
+          moon run cmd/moonsign -- sign blank.pdf --out ts-base.pdf \
+            --key key.pem --cert cert.pem --signing-time 1793793600
+          moon run cmd/moonsign -- tsa-request ts-base.pdf --out req.der
+          openssl ts -query -in req.der -text > query.txt
+          head -12 query.txt
+          cat > tsa.cnf <<'EOF'
+          [tsa]
+          default_tsa = tsa_config1
+          [tsa_config1]
+          serial = tsa_serial
+          crypto_device = builtin
+          signer_cert = tsa.crt
+          signer_key = tsa.key
+          signer_digest = sha256
+          default_policy = 1.2.3.4.1
+          digests = sha256
+          accuracy = secs:1
+          ordering = yes
+          tsa_name = yes
+          ess_cert_id_chain = no
+          EOF
+          openssl req -x509 -newkey rsa:2048 -keyout tsa.key -out tsa.crt \
+            -days 365 -nodes -subj "/CN=MoonSign Test TSA" \
+            -addext "extendedKeyUsage=critical,timeStamping" \
+            -addext "keyUsage=critical,digitalSignature"
+          echo 01 > tsa_serial
+          openssl ts -reply -config tsa.cnf -queryfile req.der -out resp.der
+          moon run cmd/moonsign -- tsa-embed ts-base.pdf --response resp.der --out stamped.pdf
+          moon run cmd/moonsign -- verify stamped.pdf --cert cert.pem      - name: Run the example
         run: bash examples/sign-and-verify/run.sh
 
   pyhanko:

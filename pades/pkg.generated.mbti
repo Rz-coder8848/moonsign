@@ -14,6 +14,8 @@ pub fn default_sign_options() -> SignOptions
 
 pub fn sign_pdf(Bytes, SigningKey, @x509.Certificate, Array[Bytes], SignOptions) -> Bytes raise PadesError
 
+pub fn sign_pdf_with_timestamp(Bytes, SigningKey, @x509.Certificate, Array[Bytes], SignOptions, (Bytes) -> Result[Bytes, String]) -> Bytes raise PadesError
+
 pub fn verify_pdf(Bytes, @x509.Certificate) -> Bool raise PadesError
 
 pub fn verify_pdf_with_anchors(Bytes, Array[@x509.Certificate], Int64) -> VerifyOutcome raise PadesError
@@ -26,6 +28,7 @@ pub(all) suberror PadesError {
   Cms(@cms.CmsError)
   Crypto(@crypto.CryptoError)
   X509(@x509.X509Error)
+  Tsa(String)
   NoSignature
   UnsupportedSubfilter(String)
   UnsupportedDigest(String)

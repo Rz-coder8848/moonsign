@@ -178,3 +178,23 @@ pub fn parse_signed_data(der : Bytes) -> SignedData raise CmsError {
     signer_infos,
   }
 }
+
+///|
+/// Parse a `[1] IMPLICIT` attribute set (unsigned attributes).
+pub fn implicit_attributes(raw : Bytes) -> Array[Attribute] raise CmsError {
+  let reader = @der.DerReader::new(raw)
+  let tlv = read_tlv(reader)
+  if tlv.tag != 0xA1 {
+    raise CmsError::Malformed("expected [1] IMPLICIT attributes")
+  }
+  parse_attributes(tlv.content)
+}
+
+///|
+/// Unsigned attributes of a signer (timestamps and countersignatures).
+pub fn unsigned_attributes(si : SignerInfo) -> Array[Attribute] raise CmsError {
+  match si.unsigned_attrs_raw {
+    Some(raw) => implicit_attributes(raw)
+    None => []
+  }
+}

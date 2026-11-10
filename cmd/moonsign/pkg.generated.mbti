@@ -22,6 +22,7 @@ pub(all) struct CliOptions {
   mut location : String?
   mut contact : String?
   mut signing_time : String?
+  mut response : String?
   mut json : Bool
 }
 

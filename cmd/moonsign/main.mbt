@@ -22,6 +22,11 @@ fn usage() -> Unit {
   println("  moonsign verify <in.pdf> --cert <cert.pem> [--json]")
   println("  moonsign verify <in.pdf> --anchors <ca.pem> [--json]")
   println("  moonsign info <in.pdf> [--json]")
+  println("  moonsign tsa-request <signed.pdf> --out <request.der>")
+  println("  moonsign tsa-embed <signed.pdf> --response <response.der> --out <out.pdf>")
+  println("")
+  println("Timestamp (RFC 3161): create a request, POST it to a TSA, then embed")
+  println("the response. The signature itself is not changed.")
   println("")
   println("Sign options:")
   println("  --out <path>      output PDF (default: <in>.signed.pdf)")
@@ -44,6 +49,8 @@ fn is_command(value : String) -> Bool {
   value == "sign" ||
   value == "verify" ||
   value == "info" ||
+  value == "tsa-request" ||
+  value == "tsa-embed" ||
   value == "help" ||
   value == "--help" ||
   value == "-h"
@@ -63,6 +70,7 @@ pub(all) struct CliOptions {
   mut location : String?
   mut contact : String?
   mut signing_time : String?
+  mut response : String?
   mut json : Bool
 }
 
@@ -89,6 +97,7 @@ fn parse_options(args : Array[String]) -> CliOptions raise CliError {
     location: None,
     contact: None,
     signing_time: None,
+    response: None,
     json: false,
   }
   let mut index = 0
@@ -107,7 +116,8 @@ fn parse_options(args : Array[String]) -> CliOptions raise CliError {
       arg == "--reason" ||
       arg == "--location" ||
       arg == "--contact" ||
-      arg == "--signing-time" {
+      arg == "--signing-time" ||
+      arg == "--response" {
       if index + 1 >= args.length() {
         raise CliError::Failure("missing value for " + arg)
       }
@@ -132,6 +142,8 @@ fn parse_options(args : Array[String]) -> CliOptions raise CliError {
         options.contact = Some(value)
       } else if arg == "--signing-time" {
         options.signing_time = Some(value)
+      } else if arg == "--response" {
+        options.response = Some(value)
       } else {
         options.field = value
       }
@@ -553,12 +565,110 @@ fn info_impl(args : Array[String]) -> Unit raise CliError {
 }
 
 ///|
+fn tsa_request_impl(args : Array[String]) -> Unit raise CliError {
+  let options = parse_options(args)
+  let input = require(options.input, "input PDF")
+  let out = require(options.out, "--out (timestamp request)")
+  let pdf_bytes = read_bytes(input)
+  let signatures = @pdf.find_signatures(pdf_bytes)
+  if signatures.length() == 0 {
+    raise CliError::Failure("no signature found in " + input)
+  }
+  let signed_data = @cms.parse_signed_data(signatures[0].contents) catch {
+    e => raise CliError::Failure(e.message())
+  }
+  if signed_data.signer_infos.length() == 0 {
+    raise CliError::Failure("CMS has no signer")
+  }
+  let signer = signed_data.signer_infos[0]
+  let hash = match @crypto.Hash::from_oid(signer.digest_oid) {
+    Some(value) => value
+    None => raise CliError::Failure("unsupported digest: " + signer.digest_oid)
+  }
+  let request = @tsa.build_request(signer.signature, hash, true)
+  write_bytes(out, request)
+  println("Timestamp request: " + out)
+}
+
+///|
+fn tsa_embed_impl(args : Array[String]) -> Unit raise CliError {
+  let options = parse_options(args)
+  let input = require(options.input, "input PDF")
+  let response_path = require(options.response, "--response (timestamp response)")
+  let out = require(options.out, "--out (timestamped PDF)")
+  let pdf_bytes = read_bytes(input)
+  let response = read_bytes(response_path)
+  let signatures = @pdf.find_signatures(pdf_bytes)
+  if signatures.length() == 0 {
+    raise CliError::Failure("no signature found in " + input)
+  }
+  let signed_data = @cms.parse_signed_data(signatures[0].contents) catch {
+    e => raise CliError::Failure(e.message())
+  }
+  if signed_data.signer_infos.length() == 0 {
+    raise CliError::Failure("CMS has no signer")
+  }
+  let signer = signed_data.signer_infos[0]
+  let hash = match @crypto.Hash::from_oid(signer.digest_oid) {
+    Some(value) => value
+    None => raise CliError::Failure("unsupported digest: " + signer.digest_oid)
+  }
+  let parsed = @tsa.parse_response(response) catch {
+    e => raise CliError::Failure(e.message())
+  }
+  let token = match parsed.token {
+    Some(value) => value
+    None => raise CliError::Failure("timestamp response contains no token")
+  }
+  if !@tsa.verify_token(token, signer.signature, hash) {
+    raise CliError::Failure("timestamp token does not match this signature")
+  }
+  let signer_cert = match @cms.signer_certificate(signed_data, signer) {
+    Some(value) => value
+    None => raise CliError::Failure("signer certificate is missing")
+  }
+  let extra : Array[Bytes] = []
+  for cert in signed_data.certificates {
+    if @der.der_bytes_compare(cert, signer_cert.der) != 0 {
+      extra.push(cert)
+    }
+  }
+  let attrs_raw = signer.signed_attrs_raw
+  let attrs = Array::make(attrs_raw.length(), b'\x00')
+  for i in 0..<attrs_raw.length() {
+    attrs[i] = attrs_raw[i]
+  }
+  if attrs.length() > 0 {
+    attrs[0] = b'\x31'
+  }
+  let cms_bytes = @cms.assemble_signed_data(
+    Bytes::from_array(attrs[:]),
+    signer.signature,
+    hash,
+    signer.signature_oid,
+    signer_cert,
+    extra,
+    signed_data.content_type,
+    timestamp_token=token,
+  )
+  let stamped = @pdf.replace_contents(pdf_bytes, cms_bytes) catch {
+    e => raise CliError::Failure(e.message())
+  }
+  write_bytes(out, stamped)
+  println("Timestamped: " + out)
+}
+
+///|
 fn run(command : String, args : Array[String]) -> Unit {
   let result : Result[Unit, String] = try {
     if command == "sign" {
       sign_impl(args)
     } else if command == "verify" {
       verify_impl(args)
+    } else if command == "tsa-request" {
+      tsa_request_impl(args)
+    } else if command == "tsa-embed" {
+      tsa_embed_impl(args)
     } else {
       info_impl(args)
     }

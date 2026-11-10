@@ -219,3 +219,98 @@ test "verify with a trusted anchor" {
     None => fail("expected a trust error with a wrong anchor")
   }
 }
+
+///|
+fn fake_tsa_token(request : Bytes) -> Result[Bytes, String] {
+  let imprint = @tsa.request_imprint(request) catch {
+    e => return Err(e.message())
+  }
+  let (oid, hashed) = imprint
+  let cert = @x509.parse_certificate(
+    @fixtures.bytes_of_hex(@fixtures.rsa_cert_der_hex),
+  ) catch {
+    _ => return Err("tsa cert")
+  }
+  let tst_info = @der.der_sequence([
+    @der.der_integer_int(1),
+    @oids.encode("1.2.3.4.1"),
+    @der.der_sequence([
+      @der.der_sequence([@oids.encode(oid)]),
+      @der.der_octet_string(hashed),
+    ]),
+    @der.der_integer_int(7),
+    @der.der_generalized_time(1794500000L),
+  ])
+  let content_digest = @crypto.digest(@crypto.Hash::Sha256, tst_info)
+  let attrs = @cms.build_signed_attrs(
+    @oids.id_ct_tst_info,
+    content_digest,
+    Some(1794500000L),
+    cert,
+    @crypto.Hash::Sha256,
+  )
+  let (modulus, _) = match cert.rsa_public_key() {
+    Some(pair) => pair
+    None => return Err("tsa key")
+  }
+  let signature = @crypto.sign_rsa_pkcs1(
+    @crypto.Hash::Sha256,
+    attrs,
+    modulus,
+    @fixtures.bytes_of_hex(@fixtures.rsa_d_hex),
+  ) catch {
+    e => return Err(e.message())
+  }
+  let token = @cms.assemble_signed_data(
+    attrs,
+    signature,
+    @crypto.Hash::Sha256,
+    @oids.sha256_with_rsa,
+    cert,
+    [],
+    @oids.id_ct_tst_info,
+    econtent=tst_info,
+  )
+  Ok(@tsa.wrap_response(token))
+}
+
+///|
+test "sign with timestamp (B-T)" {
+  let cert = rsa_certificate()
+  let options : @pades.SignOptions = {
+    field_name: "Signature1",
+    contents_chars: 16384,
+    signing_time: Some(1794500000L),
+    reason: None,
+    location: None,
+    contact: None,
+    hash: @crypto.Hash::Sha256,
+  }
+  let signed = @pades.sign_pdf_with_timestamp(
+    base_pdf(),
+    rsa_signing_key(),
+    cert,
+    [],
+    options,
+    fake_tsa_token,
+  ) catch {
+    e => abort(e.message())
+  }
+  inspect(@pades.verify_pdf(signed, cert) catch { _ => false }, content="true")
+  let signatures = @pdf.signatures(signed) catch {
+    _ => abort("signatures")
+  }
+  let signed_data = @cms.parse_signed_data(signatures[0].contents) catch {
+    _ => abort("cms")
+  }
+  let signer = signed_data.signer_infos[0]
+  let attrs = @cms.unsigned_attributes(signer) catch {
+    _ => abort("unsigned")
+  }
+  inspect(attrs.length(), content="1")
+  inspect(attrs[0].oid, content=@oids.id_aa_signature_time_stamp)
+  inspect(
+    @tsa.verify_token(attrs[0].values[0], signer.signature, @crypto.Hash::Sha256),
+    content="true",
+  )
+}

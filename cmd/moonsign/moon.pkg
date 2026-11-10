@@ -1,11 +1,14 @@
 import {
+  "Rz-coder8848/moonsign/cms",
   "Rz-coder8848/moonsign/crypto",
+  "Rz-coder8848/moonsign/der",
   "Rz-coder8848/moonsign/pades",
   "Rz-coder8848/moonsign/pdf",
   "Rz-coder8848/moonsign/pem",
+  "Rz-coder8848/moonsign/tsa",
   "Rz-coder8848/moonsign/x509",
   "moonbitlang/core/env",
-  "moonbitlang/x/fs",
+  "moonbitlang/x/fs" @fs,
 }
 
 pkgtype(kind: "executable")

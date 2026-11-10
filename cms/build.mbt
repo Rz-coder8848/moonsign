@@ -90,6 +90,8 @@ pub fn assemble_signed_data(
   signer : @x509.Certificate,
   extra_certs : Array[Bytes],
   content_type : String,
+  econtent? : Bytes,
+  timestamp_token? : Bytes,
 ) -> Bytes {
   let digest_algorithm = @der.der_sequence([@oids.encode(hash.oid())])
   let signature_algorithm = if is_rsa_signature(signature_oid) {
@@ -110,18 +112,37 @@ pub fn assemble_signed_data(
     signer.issuer_raw,
     signer.serial_raw,
   ])
-  let signer_info = @der.der_sequence([
+  let signer_parts : Array[Bytes] = [
     @der.der_integer_int(1),
     issuer_and_serial,
     digest_algorithm,
     signed_attrs_to_implicit(signed_attrs),
     signature_algorithm,
     @der.der_octet_string(signature),
-  ])
+  ]
+  match timestamp_token {
+    Some(token) => {
+      let attribute = @der.der_sequence([
+        @oids.encode(@oids.id_aa_signature_time_stamp),
+        @der.der_set([token]),
+      ])
+      signer_parts.push(@der.der_context(1, true, attribute))
+    }
+    None => ()
+  }
+  let signer_info = @der.der_sequence(signer_parts)
+  let encapsulated = match econtent {
+    Some(content) =>
+      @der.der_sequence([
+        @oids.encode(content_type),
+        @der.der_context_explicit(0, @der.der_octet_string(content)),
+      ])
+    None => @der.der_sequence([@oids.encode(content_type)])
+  }
   let signed_data = @der.der_sequence([
     @der.der_integer_int(1),
     @der.der_set([digest_algorithm]),
-    @der.der_sequence([@oids.encode(content_type)]),
+    encapsulated,
     certificates,
     @der.der_set([signer_info]),
   ])

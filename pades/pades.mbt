@@ -5,6 +5,7 @@ pub(all) suberror PadesError {
   Cms(@cms.CmsError)
   Crypto(@crypto.CryptoError)
   X509(@x509.X509Error)
+  Tsa(String)
   NoSignature
   UnsupportedSubfilter(String)
   UnsupportedDigest(String)
@@ -179,6 +180,7 @@ pub fn PadesError::message(self : PadesError) -> String {
     Cms(detail) => "CMS error: \{detail.message()}"
     Crypto(detail) => "crypto error: \{detail.message()}"
     X509(detail) => "X.509 error: \{detail.message()}"
+    Tsa(detail) => "timestamp error: \{detail}"
     NoSignature => "no signature found"
     UnsupportedSubfilter(value) => "unsupported subfilter: \{value}"
     UnsupportedDigest(value) => "unsupported digest: \{value}"
@@ -269,4 +271,97 @@ pub fn verify_pdf_with_anchors_and_crls(
     }
   }
   { signature_valid, signer: Some(signer), chain, trust_error, }
+}
+
+///|
+/// Sign a PDF and attach an RFC 3161 timestamp (PAdES B-T).
+///
+/// `transport` receives a DER TimeStampReq and must return a DER TimeStampResp
+/// (for example by POSTing it to a TSA with `application/timestamp-query`).
+/// The timestamp token is checked against the signature before embedding.
+pub fn sign_pdf_with_timestamp(
+  pdf_bytes : Bytes,
+  key : SigningKey,
+  certificate : @x509.Certificate,
+  extra_certs : Array[Bytes],
+  options : SignOptions,
+  transport : (Bytes) -> Result[Bytes, String],
+) -> Bytes raise PadesError {
+  let prepared = @pdf.prepare(
+    pdf_bytes,
+    options.field_name,
+    options.contents_chars,
+    reason?=options.reason,
+    location?=options.location,
+    contact?=options.contact,
+    signing_time?=options.signing_time,
+  ) catch {
+    e => raise PadesError::Pdf(e)
+  }
+  let (sealed_pdf, slot) = @pdf.seal_layout(prepared, options.contents_chars) catch {
+    e => raise PadesError::Pdf(e)
+  }
+  let parts = @pdf.signed_ranges(sealed_pdf, slot)
+  let digest = @crypto.digest_parts(options.hash, parts)
+  let signed_attrs = @cms.build_signed_attrs(
+    @oids.id_data,
+    digest,
+    options.signing_time,
+    certificate,
+    options.hash,
+  )
+  let (signature, signature_oid) = match key {
+    Rsa(modulus, private_exponent) => {
+      let value = @crypto.sign_rsa_pkcs1(
+        options.hash,
+        signed_attrs,
+        modulus,
+        private_exponent,
+      ) catch {
+        e => raise PadesError::Crypto(e)
+      }
+      (value, signature_oid_for_rsa(options.hash))
+    }
+    EcdsaP256(private_key) => {
+      let value = @crypto.sign_ecdsa_p256(
+        options.hash,
+        signed_attrs,
+        private_key,
+      ) catch {
+        e => raise PadesError::Crypto(e)
+      }
+      (value, signature_oid_for_ecdsa(options.hash))
+    }
+  }
+  let request = @tsa.build_request(signature, options.hash, true)
+  let response = match transport(request) {
+    Ok(value) => value
+    Err(message) => raise PadesError::Tsa(message)
+  }
+  let parsed = @tsa.parse_response(response) catch {
+    e => raise PadesError::Tsa(e.message())
+  }
+  if parsed.status != 0 && parsed.status != 1 {
+    raise PadesError::Tsa("timestamp authority status " + parsed.status.to_string())
+  }
+  let token = match parsed.token {
+    Some(value) => value
+    None => raise PadesError::Tsa("timestamp response contains no token")
+  }
+  if !@tsa.verify_token(token, signature, options.hash) {
+    raise PadesError::Tsa("timestamp token does not match the signature")
+  }
+  let cms_bytes = @cms.assemble_signed_data(
+    signed_attrs,
+    signature,
+    options.hash,
+    signature_oid,
+    certificate,
+    extra_certs,
+    @oids.id_data,
+    timestamp_token=token,
+  )
+  @pdf.embed(sealed_pdf, slot, cms_bytes) catch {
+    e => raise PadesError::Pdf(e)
+  }
 }

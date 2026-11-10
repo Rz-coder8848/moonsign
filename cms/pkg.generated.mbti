@@ -8,9 +8,11 @@ import {
 }
 
 // Values
-pub fn assemble_signed_data(Bytes, Bytes, @crypto.Hash, String, @x509.Certificate, Array[Bytes], String) -> Bytes
+pub fn assemble_signed_data(Bytes, Bytes, @crypto.Hash, String, @x509.Certificate, Array[Bytes], String, econtent? : Bytes, timestamp_token? : Bytes) -> Bytes
 
 pub fn build_signed_attrs(String, Bytes, Int64?, @x509.Certificate, @crypto.Hash) -> Bytes
+
+pub fn implicit_attributes(Bytes) -> Array[Attribute] raise CmsError
 
 pub fn parse_signed_data(Bytes) -> SignedData raise CmsError
 
@@ -21,6 +23,8 @@ pub fn signed_attrs_from_implicit(Bytes) -> Bytes
 pub fn signed_attrs_to_implicit(Bytes) -> Bytes
 
 pub fn signer_certificate(SignedData, SignerInfo) -> @x509.Certificate?
+
+pub fn unsigned_attributes(SignerInfo) -> Array[Attribute] raise CmsError
 
 pub fn verify_signed_data(SignedData, @x509.Certificate, Bytes) -> Bool
 

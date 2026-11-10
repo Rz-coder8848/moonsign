@@ -1,0 +1,43 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "Rz-coder8848/moonsign/tsa"
+
+import {
+  "Rz-coder8848/moonsign/cms",
+  "Rz-coder8848/moonsign/crypto",
+  "Rz-coder8848/moonsign/der",
+}
+
+// Values
+pub fn build_request(Bytes, @crypto.Hash, Bool) -> Bytes
+
+pub fn parse_response(Bytes) -> TsaResponse raise TsaError
+
+pub fn request_imprint(Bytes) -> (String, Bytes) raise TsaError
+
+pub fn token_imprint(Bytes) -> (String, Bytes) raise TsaError
+
+pub fn verify_token(Bytes, Bytes, @crypto.Hash) -> Bool
+
+pub fn wrap_response(Bytes) -> Bytes
+
+// Errors
+pub(all) suberror TsaError {
+  Der(@der.DerError)
+  Cms(@cms.CmsError)
+  BadResponse(String)
+  NoToken
+  Status(Int32)
+  ImprintMismatch
+}
+pub fn TsaError::message(Self) -> String
+
+// Types and methods
+pub(all) struct TsaResponse {
+  status : Int32
+  token : Bytes?
+  failure : String?
+}
+
+// Type aliases
+
+// Traits
