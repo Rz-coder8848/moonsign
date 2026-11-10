@@ -88,7 +88,8 @@ jobs:
         run: |
           moon run cmd/moonsign -- sign blank.pdf --out p12-signed.pdf \
             --p12 testdata/certs/rsa.p12 --p12-password test
-          moon run cmd/moonsign -- verify p12-signed.pdf --cert testdata/certs/rsa.crt      - name: Certificate chain trust
+          moon run cmd/moonsign -- verify p12-signed.pdf --cert testdata/certs/rsa.crt
+      - name: Certificate chain trust
         run: |
           cat testdata/certs/int.crt testdata/certs/ca.crt > chain.pem
           moon run cmd/moonsign -- sign blank.pdf --out chain-signed.pdf \
