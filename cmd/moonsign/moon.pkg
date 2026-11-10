@@ -2,6 +2,7 @@ import {
   "Rz-coder8848/moonsign/cms",
   "Rz-coder8848/moonsign/crypto",
   "Rz-coder8848/moonsign/der",
+  "Rz-coder8848/moonsign/ocsp",
   "Rz-coder8848/moonsign/pades",
   "Rz-coder8848/moonsign/pdf",
   "Rz-coder8848/moonsign/pem",

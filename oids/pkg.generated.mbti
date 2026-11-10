@@ -28,6 +28,8 @@ pub let id_ct_tst_info : String
 
 pub let id_data : String
 
+pub let id_kp_ocsp_signing : String
+
 pub let id_kp_time_stamping : String
 
 pub let id_message_digest : String

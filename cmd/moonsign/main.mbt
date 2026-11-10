@@ -38,6 +38,7 @@ fn usage() -> Unit {
   println("  --anchors <path>  trust anchors used to check the signer chain")
   println("  --crl <path>      CRLs (PEM) used to check revocation")
   println("  --tsa-anchors <path>  trust anchors for the timestamp (B-T)")
+  println("  --ocsp <path>     OCSP response (DER) to check revocation")
   println("  --field <name>    signature field name (default: Signature1)")
   println("  --reason <text>   reason recorded in the signature dictionary")
   println("  --location <text> signing location")
@@ -77,6 +78,7 @@ pub(all) struct CliOptions {
   mut signing_time : String?
   mut response : String?
   mut tsa_anchors : String?
+  mut ocsp : String?
   mut json : Bool
 }
 
@@ -105,6 +107,7 @@ fn parse_options(args : Array[String]) -> CliOptions raise CliError {
     signing_time: None,
     response: None,
     tsa_anchors: None,
+    ocsp: None,
     json: false,
   }
   let mut index = 0
@@ -125,7 +128,8 @@ fn parse_options(args : Array[String]) -> CliOptions raise CliError {
       arg == "--contact" ||
       arg == "--signing-time" ||
       arg == "--response" ||
-      arg == "--tsa-anchors" {
+      arg == "--tsa-anchors" ||
+      arg == "--ocsp" {
       if index + 1 >= args.length() {
         raise CliError::Failure("missing value for " + arg)
       }
@@ -154,6 +158,8 @@ fn parse_options(args : Array[String]) -> CliOptions raise CliError {
         options.response = Some(value)
       } else if arg == "--tsa-anchors" {
         options.tsa_anchors = Some(value)
+      } else if arg == "--ocsp" {
+        options.ocsp = Some(value)
       } else {
         options.field = value
       }
@@ -503,10 +509,55 @@ fn verify_impl(args : Array[String]) -> Unit raise CliError {
         }
       }
       report_timestamp(pdf_bytes, options.tsa_anchors)
+      let mut ocsp_revoked = false
+      match options.ocsp {
+        Some(path) => {
+          let mut report = "  OCSP: skipped (no issuer certificate in the chain)"
+          match outcome.signer {
+            Some(signer) =>
+              match outcome.chain {
+                Some(chain) =>
+                  if chain.certificates.length() >= 2 {
+                    let issuer = chain.certificates[1]
+                    let bytes = read_bytes(path)
+                    let response = @ocsp.parse_response(bytes) catch {
+                      e =>
+                        raise CliError::Failure(
+                          "cannot parse OCSP response: " + e.message(),
+                        )
+                    }
+                    let status = @ocsp.check(
+                      response,
+                      signer,
+                      issuer,
+                      now_seconds(),
+                    ) catch {
+                      e =>
+                        raise CliError::Failure(
+                          "OCSP check failed: " + e.message(),
+                        )
+                    }
+                    match status {
+                      @ocsp.CertStatus::Good => report = "  OCSP: good"
+                      @ocsp.CertStatus::Revoked(at) => {
+                        report = "  OCSP: REVOKED at " + at.to_string()
+                        ocsp_revoked = true
+                      }
+                      @ocsp.CertStatus::Unknown => report = "  OCSP: unknown"
+                    }
+                  }
+                None => ()
+              }
+            None => ()
+          }
+          println(report)
+        }
+        None => ()
+      }
       if !outcome.signature_valid {
         @env.exit(2)
       }
-      if !trusted {
+      if !trusted || ocsp_revoked {
         @env.exit(3)
       }
     }
@@ -550,6 +601,9 @@ fn verify_impl(args : Array[String]) -> Unit raise CliError {
         }
       }
       report_timestamp(pdf_bytes, options.tsa_anchors)
+      if options.ocsp is Some(_) {
+        println("  OCSP: skipped (use --anchors so the issuer is available)")
+      }
       if !valid {
         @env.exit(2)
       }

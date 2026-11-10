@@ -1,0 +1,55 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "Rz-coder8848/moonsign/ocsp"
+
+import {
+  "Rz-coder8848/moonsign/der",
+  "Rz-coder8848/moonsign/x509",
+}
+
+// Values
+pub fn check(OcspResponse, @x509.Certificate, @x509.Certificate, Int64) -> CertStatus raise OcspError
+
+pub fn parse_response(Bytes) -> OcspResponse raise OcspError
+
+// Errors
+pub(all) suberror OcspError {
+  Der(@der.DerError)
+  X509(@x509.X509Error)
+  BadResponse(String)
+  NoResponse
+  CertMismatch
+  Stale
+  SignatureInvalid
+  Unsupported(String)
+}
+pub fn OcspError::message(Self) -> String
+
+// Types and methods
+pub(all) enum CertStatus {
+  Good
+  Revoked(Int64)
+  Unknown
+}
+
+pub(all) struct OcspResponse {
+  status : Int32
+  responses : Array[SingleResponse]
+  certificates : Array[@x509.Certificate]
+  tbs_raw : Bytes
+  signature_algorithm_oid : String
+  signature_bits : Bytes
+}
+
+pub(all) struct SingleResponse {
+  hash_oid : String
+  issuer_name_hash : Bytes
+  issuer_key_hash : Bytes
+  serial : Bytes
+  status : CertStatus
+  this_update : Int64
+  next_update : Int64?
+}
+
+// Type aliases
+
+// Traits

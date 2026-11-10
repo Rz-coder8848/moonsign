@@ -422,6 +422,17 @@ fn verify_signed_bytes(
 }
 
 ///|
+/// Verify a signature over arbitrary bytes with a certificate's public key.
+pub fn verify_signature(
+  algorithm_oid : String,
+  signed_bytes : Bytes,
+  signature_bits : Bytes,
+  certificate : Certificate,
+) -> Bool {
+  verify_signed_bytes(algorithm_oid, signed_bytes, signature_bits, certificate)
+}
+
+///|
 /// Verify that `cert` was signed by `issuer`.
 ///
 /// This checks the certificate signature only; validity, CA status and name

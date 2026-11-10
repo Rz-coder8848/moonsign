@@ -24,6 +24,7 @@ pub(all) struct CliOptions {
   mut signing_time : String?
   mut response : String?
   mut tsa_anchors : String?
+  mut ocsp : String?
   mut json : Bool
 }
 

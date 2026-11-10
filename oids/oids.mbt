@@ -137,3 +137,7 @@ pub let extended_key_usage : String = "2.5.29.37"
 ///|
 /// id-kp-timeStamping (1.3.6.1.5.5.7.3.8)
 pub let id_kp_time_stamping : String = "1.3.6.1.5.5.7.3.8"
+
+///|
+/// id-kp-OCSPSigning (1.3.6.1.5.5.7.3.9)
+pub let id_kp_ocsp_signing : String = "1.3.6.1.5.5.7.3.9"

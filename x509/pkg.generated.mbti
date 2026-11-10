@@ -14,6 +14,8 @@ pub fn verify_certificate_signature(Certificate, Certificate) -> Bool
 
 pub fn verify_crl_signature(Crl, Certificate) -> Bool
 
+pub fn verify_signature(String, Bytes, Bytes, Certificate) -> Bool
+
 // Errors
 pub(all) suberror X509Error {
   Der(@der.DerError)

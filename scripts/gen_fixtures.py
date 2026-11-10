@@ -256,6 +256,10 @@ def main() -> None:
         "",
         f'pub let crl_der_hex : String = "{der_hex(CERTS / "crl.der")}"',
         "",
+        f'pub let ocsp_good_der_hex : String = "{der_hex(CERTS / "ocsp-good.der")}"',
+        "",
+        f'pub let ocsp_revoked_der_hex : String = "{der_hex(CERTS / "ocsp-revoked.der")}"',
+        "",
     ]
     OUT.write_text("\n".join(lines), encoding="utf-8")
     print(f"wrote {OUT} ({OUT.stat().st_size} bytes)")
