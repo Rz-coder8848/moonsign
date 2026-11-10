@@ -6,7 +6,7 @@ MoonSign 的实现对照了下面这些公开规范。列出"哪条规范 → �
 | --- | --- | --- | --- |
 | RFC 5652 | Cryptographic Message Syntax (CMS) | `cms/` | SignedData 构造、解析、验签；detached 模式 |
 | RFC 5035 | ESS signingCertificateV2 | `cms/build.mbt` | 已实现（SHA-256 证书指纹） |
-| RFC 5280 | X.509 证书与 CRL | `x509/` | 解析、有效期、公钥、签发者/序列号；路径校验待做 |
+| RFC 5280 | X.509 证书与 CRL | `x509/`、`trust/` | 解析、有效期、公钥、BasicConstraints、KeyUsage、路径构建；CRL/OCSP 待做 |
 | RFC 8017 | PKCS#1 v1.5 / PSS | `crypto/` | v1.5 签名与验签（SHA-1/256/384/512） |
 | RFC 6979 | 确定性 ECDSA | `crypto/` | 由 mooncry 提供（SHA-256） |
 | ETSI EN 319 142-1 | PAdES 基线 | `pades/` | B-B；B-T / B-LT 待做 |
