@@ -297,20 +297,20 @@ test "sign with timestamp (B-T)" {
     e => abort(e.message())
   }
   inspect(@pades.verify_pdf(signed, cert) catch { _ => false }, content="true")
-  let signatures = @pdf.signatures(signed) catch {
-    _ => abort("signatures")
-  }
+  let signatures = @pdf.signatures(signed) catch { _ => abort("signatures") }
   let signed_data = @cms.parse_signed_data(signatures[0].contents) catch {
     _ => abort("cms")
   }
   let signer = signed_data.signer_infos[0]
-  let attrs = @cms.unsigned_attributes(signer) catch {
-    _ => abort("unsigned")
-  }
+  let attrs = @cms.unsigned_attributes(signer) catch { _ => abort("unsigned") }
   inspect(attrs.length(), content="1")
   inspect(attrs[0].oid, content=@oids.id_aa_signature_time_stamp)
   inspect(
-    @tsa.verify_token(attrs[0].values[0], signer.signature, @crypto.Hash::Sha256),
+    @tsa.verify_token(
+      attrs[0].values[0],
+      signer.signature,
+      @crypto.Hash::Sha256,
+    ),
     content="true",
   )
 }

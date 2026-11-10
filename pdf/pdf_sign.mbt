@@ -592,7 +592,10 @@ fn is_pdf_whitespace(value : Byte) -> Bool {
 /// The new CMS must fit in the reserved capacity; `/ByteRange` is not changed,
 /// so the original signature remains valid when only unsigned attributes are
 /// added.
-pub fn replace_contents(pdf : Bytes, cms_der : Bytes) -> Bytes raise PdfSignError {
+pub fn replace_contents(
+  pdf : Bytes,
+  cms_der : Bytes,
+) -> Bytes raise PdfSignError {
   let key = @utf8.encode("/Contents")
   let key_pos = match find_bytes(pdf, key, 0) {
     Some(pos) => pos

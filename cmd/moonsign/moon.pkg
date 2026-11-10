@@ -8,7 +8,7 @@ import {
   "Rz-coder8848/moonsign/tsa",
   "Rz-coder8848/moonsign/x509",
   "moonbitlang/core/env",
-  "moonbitlang/x/fs" @fs,
+  "moonbitlang/x/fs",
 }
 
 pkgtype(kind: "executable")

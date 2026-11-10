@@ -5,14 +5,14 @@ pub(all) suberror TsaError {
   Cms(@cms.CmsError)
   BadResponse(String)
   NoToken
-  Status(Int)
+  Status(Int32)
   ImprintMismatch
 }
 
 ///|
 /// A parsed TimeStampResp.
 pub(all) struct TsaResponse {
-  status : Int
+  status : Int32
   token : Bytes?
   failure : String?
 }
@@ -32,7 +32,7 @@ fn read_seq(reader : @der.DerReader) -> @der.DerReader raise TsaError {
 }
 
 ///|
-fn read_int(reader : @der.DerReader) -> Int raise TsaError {
+fn read_int(reader : @der.DerReader) -> Int32 raise TsaError {
   reader.read_integer_int() catch {
     e => raise TsaError::Der(e)
   }
@@ -102,16 +102,13 @@ pub fn parse_response(response : Bytes) -> TsaResponse raise TsaError {
   } else {
     Some(read_tlv(sequence).raw)
   }
-  { status, token, failure }
+  { status, token, failure, }
 }
 
 ///|
 /// Wrap a TimeStampToken into a successful TimeStampResp.
 pub fn wrap_response(token : Bytes) -> Bytes {
-  @der.der_sequence([
-    @der.der_sequence([@der.der_integer_int(0)]),
-    token,
-  ])
+  @der.der_sequence([@der.der_sequence([@der.der_integer_int(0)]), token])
 }
 
 ///|
@@ -147,9 +144,7 @@ pub fn verify_token(
   signature : Bytes,
   hash : @crypto.Hash,
 ) -> Bool {
-  let imprint = token_imprint(token) catch {
-    _ => return false
-  }
+  let imprint = token_imprint(token) catch { _ => return false }
   let (oid, hashed) = imprint
   if oid != hash.oid() {
     return false

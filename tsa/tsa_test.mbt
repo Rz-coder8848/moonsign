@@ -4,7 +4,6 @@ fn test_signature() -> Bytes {
   Bytes::from_array(out[:])
 }
 
-
 ///|
 test "timestamp request round trip" {
   let signature = test_signature()
@@ -16,7 +15,9 @@ test "timestamp request round trip" {
   inspect(oid, content=@oids.sha256)
   inspect(
     @fixtures.hex_of_bytes(hashed),
-    content=@fixtures.hex_of_bytes(@crypto.digest(@crypto.Hash::Sha256, signature)),
+    content=@fixtures.hex_of_bytes(
+      @crypto.digest(@crypto.Hash::Sha256, signature),
+    ),
   )
 }
 
@@ -75,15 +76,16 @@ test "timestamp response parsing and imprint" {
   let signature = test_signature()
   let token = fake_token(signature)
   let response = @tsa.wrap_response(token)
-  let parsed = @tsa.parse_response(response) catch {
-    e => fail(e.message())
-  }
+  let parsed = @tsa.parse_response(response) catch { e => fail(e.message()) }
   inspect(parsed.status, content="0")
   let extracted = match parsed.token {
     Some(value) => value
     None => fail("expected a token")
   }
-  inspect(@tsa.verify_token(extracted, signature, @crypto.Hash::Sha256), content="true")
+  inspect(
+    @tsa.verify_token(extracted, signature, @crypto.Hash::Sha256),
+    content="true",
+  )
   let tampered = Array::make(signature.length(), b'\x00')
   for i in 0..<signature.length() {
     tampered[i] = signature[i]

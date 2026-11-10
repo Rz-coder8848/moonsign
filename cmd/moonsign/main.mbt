@@ -23,9 +23,13 @@ fn usage() -> Unit {
   println("  moonsign verify <in.pdf> --anchors <ca.pem> [--json]")
   println("  moonsign info <in.pdf> [--json]")
   println("  moonsign tsa-request <signed.pdf> --out <request.der>")
-  println("  moonsign tsa-embed <signed.pdf> --response <response.der> --out <out.pdf>")
+  println(
+    "  moonsign tsa-embed <signed.pdf> --response <response.der> --out <out.pdf>",
+  )
   println("")
-  println("Timestamp (RFC 3161): create a request, POST it to a TSA, then embed")
+  println(
+    "Timestamp (RFC 3161): create a request, POST it to a TSA, then embed",
+  )
   println("the response. The signature itself is not changed.")
   println("")
   println("Sign options:")
@@ -594,7 +598,10 @@ fn tsa_request_impl(args : Array[String]) -> Unit raise CliError {
 fn tsa_embed_impl(args : Array[String]) -> Unit raise CliError {
   let options = parse_options(args)
   let input = require(options.input, "input PDF")
-  let response_path = require(options.response, "--response (timestamp response)")
+  let response_path = require(
+    options.response,
+    "--response (timestamp response)",
+  )
   let out = require(options.out, "--out (timestamped PDF)")
   let pdf_bytes = read_bytes(input)
   let response = read_bytes(response_path)

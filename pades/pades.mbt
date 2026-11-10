@@ -342,7 +342,9 @@ pub fn sign_pdf_with_timestamp(
     e => raise PadesError::Tsa(e.message())
   }
   if parsed.status != 0 && parsed.status != 1 {
-    raise PadesError::Tsa("timestamp authority status " + parsed.status.to_string())
+    raise PadesError::Tsa(
+      "timestamp authority status " + parsed.status.to_string(),
+    )
   }
   let token = match parsed.token {
     Some(value) => value
