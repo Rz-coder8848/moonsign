@@ -24,6 +24,9 @@ fn main {
     field_name: "Signature1",
     contents_chars: 16384,
     signing_time: Some(1793793600L),
+    reason: None,
+    location: None,
+    contact: None,
     hash: @crypto.Hash::Sha256,
   }
   let signed = @pades.sign_pdf(

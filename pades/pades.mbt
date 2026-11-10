@@ -27,6 +27,9 @@ pub(all) struct SignOptions {
   field_name : String
   contents_chars : Int32
   signing_time : Int64?
+  reason : String?
+  location : String?
+  contact : String?
   hash : @crypto.Hash
 }
 
@@ -37,6 +40,9 @@ pub fn default_sign_options() -> SignOptions {
     field_name: "Signature1",
     contents_chars: 16384,
     signing_time: None,
+    reason: None,
+    location: None,
+    contact: None,
     hash: @crypto.Hash::Sha256,
   }
 }
@@ -75,6 +81,10 @@ pub fn sign_pdf(
     pdf_bytes,
     options.field_name,
     options.contents_chars,
+    reason?=options.reason,
+    location?=options.location,
+    contact?=options.contact,
+    signing_time?=options.signing_time,
   ) catch {
     e => raise PadesError::Pdf(e)
   }

@@ -39,6 +39,9 @@ test "sign and verify RSA PDF" {
     field_name: "Signature1",
     contents_chars: 16384,
     signing_time: Some(1793793600L),
+    reason: None,
+    location: None,
+    contact: None,
     hash: @crypto.Hash::Sha256,
   }
   let signed = @pades.sign_pdf(base_pdf(), rsa_signing_key(), cert, [], options) catch {
@@ -71,6 +74,9 @@ test "sign and verify ECDSA PDF" {
     field_name: "Signature2",
     contents_chars: 16384,
     signing_time: None,
+    reason: None,
+    location: None,
+    contact: None,
     hash: @crypto.Hash::Sha256,
   }
   let signed = @pades.sign_pdf(
@@ -101,6 +107,9 @@ test "tampering invalidates the signature" {
     field_name: "Signature1",
     contents_chars: 16384,
     signing_time: None,
+    reason: None,
+    location: None,
+    contact: None,
     hash: @crypto.Hash::Sha256,
   }
   let signed = @pades.sign_pdf(base_pdf(), rsa_signing_key(), cert, [], options) catch {
@@ -126,6 +135,9 @@ test "wrong certificate fails verification" {
     field_name: "Signature1",
     contents_chars: 16384,
     signing_time: None,
+    reason: None,
+    location: None,
+    contact: None,
     hash: @crypto.Hash::Sha256,
   }
   let signed = @pades.sign_pdf(base_pdf(), rsa_signing_key(), cert, [], options) catch {
@@ -169,6 +181,9 @@ test "verify with a trusted anchor" {
     field_name: "Signature1",
     contents_chars: 16384,
     signing_time: None,
+    reason: None,
+    location: None,
+    contact: None,
     hash: @crypto.Hash::Sha256,
   }
   let signed = @pades.sign_pdf(

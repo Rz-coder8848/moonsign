@@ -38,6 +38,9 @@ pub(all) struct SignOptions {
   field_name : String
   contents_chars : Int32
   signing_time : Int64?
+  reason : String?
+  location : String?
+  contact : String?
   hash : @crypto.Hash
 }
 

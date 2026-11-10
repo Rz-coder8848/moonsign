@@ -29,6 +29,10 @@ fn usage() -> Unit {
   println("  --anchors <path>  trust anchors used to check the signer chain")
   println("  --crl <path>      CRLs (PEM) used to check revocation")
   println("  --field <name>    signature field name (default: Signature1)")
+  println("  --reason <text>   reason recorded in the signature dictionary")
+  println("  --location <text> signing location")
+  println("  --contact <text>  signer contact information")
+  println("  --signing-time <unix seconds>  override the signing time")
   println("  --json            machine-readable summary")
   println("")
   println("Exit codes: 0 ok/valid, 2 invalid signature, 3 valid but untrusted,")
@@ -55,6 +59,10 @@ pub(all) struct CliOptions {
   mut anchors : String?
   mut crl : String?
   mut field : String
+  mut reason : String?
+  mut location : String?
+  mut contact : String?
+  mut signing_time : String?
   mut json : Bool
 }
 
@@ -77,6 +85,10 @@ fn parse_options(args : Array[String]) -> CliOptions raise CliError {
     anchors: None,
     crl: None,
     field: "Signature1",
+    reason: None,
+    location: None,
+    contact: None,
+    signing_time: None,
     json: false,
   }
   let mut index = 0
@@ -91,7 +103,11 @@ fn parse_options(args : Array[String]) -> CliOptions raise CliError {
       arg == "--chain" ||
       arg == "--anchors" ||
       arg == "--crl" ||
-      arg == "--field" {
+      arg == "--field" ||
+      arg == "--reason" ||
+      arg == "--location" ||
+      arg == "--contact" ||
+      arg == "--signing-time" {
       if index + 1 >= args.length() {
         raise CliError::Failure("missing value for " + arg)
       }
@@ -108,6 +124,14 @@ fn parse_options(args : Array[String]) -> CliOptions raise CliError {
         options.anchors = Some(value)
       } else if arg == "--crl" {
         options.crl = Some(value)
+      } else if arg == "--reason" {
+        options.reason = Some(value)
+      } else if arg == "--location" {
+        options.location = Some(value)
+      } else if arg == "--contact" {
+        options.contact = Some(value)
+      } else if arg == "--signing-time" {
+        options.signing_time = Some(value)
       } else {
         options.field = value
       }
@@ -236,10 +260,17 @@ fn sign_impl(args : Array[String]) -> Unit raise CliError {
       @pades.SigningKey::Rsa(modulus, private_exponent)
     @pem.PrivateKey::EcdsaP256(scalar) => @pades.SigningKey::EcdsaP256(scalar)
   }
+  let signing_time = match options.signing_time {
+    Some(text) => parse_unix(text)
+    None => now_seconds()
+  }
   let sign_options : @pades.SignOptions = {
     field_name: options.field,
     contents_chars: 16384,
-    signing_time: None,
+    signing_time: Some(signing_time),
+    reason: options.reason,
+    location: options.location,
+    contact: options.contact,
     hash: @crypto.Hash::Sha256,
   }
   let signed = @pades.sign_pdf(
@@ -294,6 +325,27 @@ fn now_seconds() -> Int64 {
   } else {
     raw
   }
+}
+
+///|
+fn parse_unix(text : String) -> Int64 raise CliError {
+  if text.length() == 0 {
+    raise CliError::Failure("invalid --signing-time")
+  }
+  let mut value = 0L
+  for i in 0..<text.length() {
+    match text.get_char(i) {
+      Some(c) => {
+        let digit = c.to_int() - 48
+        if digit < 0 || digit > 9 {
+          raise CliError::Failure("invalid --signing-time: " + text)
+        }
+        value = value * 10L + Int64::from_int(digit)
+      }
+      None => raise CliError::Failure("invalid --signing-time: " + text)
+    }
+  }
+  value
 }
 
 ///|
@@ -461,7 +513,14 @@ fn info_impl(args : Array[String]) -> Unit raise CliError {
       buf.write_string(json_escape(signatures[i].subfilter))
       buf.write_string("\",\"contents_bytes\":")
       buf.write_string(signatures[i].contents.length().to_string())
-      buf.write_string("}")
+      buf.write_string(",\"byte_range\":[")
+      for j in 0..<signatures[i].byte_range.length() {
+        if j > 0 {
+          buf.write_string(",")
+        }
+        buf.write_string(signatures[i].byte_range[j].to_string())
+      }
+      buf.write_string("]}")
     }
     buf.write_string("]}")
     println(buf.to_string())
@@ -481,6 +540,14 @@ fn info_impl(args : Array[String]) -> Unit raise CliError {
         signatures[i].contents.length().to_string() +
         " bytes",
       )
+      let ranges = StringBuilder()
+      for j in 0..<signatures[i].byte_range.length() {
+        if j > 0 {
+          ranges.write_string(" ")
+        }
+        ranges.write_string(signatures[i].byte_range[j].to_string())
+      }
+      println("      byteRange: [" + ranges.to_string() + "]")
     }
   }
 }

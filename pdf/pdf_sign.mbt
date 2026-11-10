@@ -191,10 +191,90 @@ fn append_annotation(
 /// `contents_chars` is the number of hex characters reserved for the CMS
 /// signature (must be even). The returned PDF still has no signature value;
 /// call `locate`, hash the declared ranges, build the CMS, then `embed`.
+
+///|
+fn pdf_floor_div64(a : Int64, b : Int64) -> Int64 {
+  let q = a / b
+  let r = a % b
+  if r != 0 && (r < 0) != (b < 0) {
+    q - 1
+  } else {
+    q
+  }
+}
+
+///|
+fn pdf_civil_from_days(days : Int32) -> (Int32, Int32, Int32) {
+  let z = days + 719468
+  let era = (if z >= 0 { z } else { z - 146096 }) / 146097
+  let doe = z - era * 146097
+  let yoe = (doe - doe / 1460 + doe / 36524 - doe / 146096) / 365
+  let y = yoe + era * 400
+  let doy = doe - (365 * yoe + yoe / 4 - yoe / 100)
+  let mp = (5 * doy + 2) / 153
+  let d = doy - (153 * mp + 2) / 5 + 1
+  let m = mp + (if mp < 10 { 3 } else { -9 })
+  let year = y + (if m <= 2 { 1 } else { 0 })
+  (year, m, d)
+}
+
+///|
+fn pdf_pad2(value : Int32) -> String {
+  if value < 10 {
+    "0" + value.to_string()
+  } else {
+    value.to_string()
+  }
+}
+
+///|
+fn pdf_pad4(value : Int32) -> String {
+  if value < 10 {
+    "000" + value.to_string()
+  } else if value < 100 {
+    "00" + value.to_string()
+  } else if value < 1000 {
+    "0" + value.to_string()
+  } else {
+    value.to_string()
+  }
+}
+
+///|
+/// Format a Unix timestamp as a PDF date string (`D:YYYYMMDDHHmmSSZ`).
+fn pdf_date(unix : Int64) -> String {
+  let days64 = pdf_floor_div64(unix, Int64::from_int(86400))
+  let seconds = unix - days64 * Int64::from_int(86400)
+  let days = days64.to_int()
+  let (year, month, day) = pdf_civil_from_days(days)
+  let hour = (seconds / Int64::from_int(3600)).to_int()
+  let minute = (seconds % Int64::from_int(3600) / Int64::from_int(60)).to_int()
+  let second = (seconds % Int64::from_int(60)).to_int()
+  "D:" +
+  pdf_pad4(year) +
+  pdf_pad2(month) +
+  pdf_pad2(day) +
+  pdf_pad2(hour) +
+  pdf_pad2(minute) +
+  pdf_pad2(second) +
+  "Z"
+}
+
+///|
+/// Add an invisible signature field with a fixed-size `/Contents` placeholder
+/// and a fixed-width `/ByteRange` placeholder, then append a new revision.
+///
+/// `contents_chars` is the number of hex characters reserved for the CMS
+/// signature (must be even). Optional metadata is written into the signature
+/// dictionary (`/M`, `/Reason`, `/Location`, `/ContactInfo`).
 pub fn prepare(
   pdf : Bytes,
   field_name : String,
   contents_chars : Int32,
+  reason? : String,
+  location? : String,
+  contact? : String,
+  signing_time? : Int64,
 ) -> Bytes raise PdfSignError {
   if contents_chars < 64 || contents_chars % 2 != 0 {
     raise PdfSignError::Malformed("contents_chars must be an even number >= 64")
@@ -213,7 +293,7 @@ pub fn prepare(
   }
   let page_number = pages[0]
   let placeholder = Array::make(contents_chars, b'0')
-  let signature_dictionary = dict([
+  let entries : Array[(@pdfcore.PdfName, @pdfsyntax.PdfObject)] = [
     (name("Type"), name_object("Sig")),
     (name("Filter"), name_object("Adobe.PPKLite")),
     (name("SubFilter"), name_object("ETSI.CAdES.detached")),
@@ -227,7 +307,28 @@ pub fn prepare(
       ]),
     ),
     (name("Contents"), string_object(Bytes::from_array(placeholder[:]))),
-  ])
+  ]
+  match signing_time {
+    Some(value) =>
+      entries.push((name("M"), string_object(@utf8.encode(pdf_date(value)))))
+    None => ()
+  }
+  match reason {
+    Some(value) =>
+      entries.push((name("Reason"), string_object(@utf8.encode(value))))
+    None => ()
+  }
+  match location {
+    Some(value) =>
+      entries.push((name("Location"), string_object(@utf8.encode(value))))
+    None => ()
+  }
+  match contact {
+    Some(value) =>
+      entries.push((name("ContactInfo"), string_object(@utf8.encode(value))))
+    None => ()
+  }
+  let signature_dictionary = dict(entries)
   let signature_number = doc.add_object(signature_dictionary)
   let field = dict([
     (name("Type"), name_object("Annot")),

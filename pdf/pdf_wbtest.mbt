@@ -97,3 +97,25 @@ test "embed rejects an oversized signature" {
   }
   inspect(failed, content="true")
 }
+
+///|
+test "signature metadata is written" {
+  let base = @pdflite.pdf_minimum_valid_pdf() catch { _ => fail("minimal pdf") }
+  let bytes = @pdflite.pdf_write_document(base) catch { _ => fail("serialize") }
+  let prepared = prepare(
+    bytes,
+    "Signature1",
+    4096,
+    reason="approval",
+    location="Shenzhen",
+    contact="signer@example.com",
+    signing_time=1793793600L,
+  ) catch {
+    _ => fail("prepare")
+  }
+  let text = text_of_bytes(prepared)
+  inspect(text.contains("/Reason"), content="true")
+  inspect(text.contains("/Location"), content="true")
+  inspect(text.contains("/ContactInfo"), content="true")
+  inspect(text.contains("D:20261104120000Z"), content="true")
+}
