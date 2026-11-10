@@ -31,7 +31,7 @@
 | KeyUsage（keyCertSign） | ✅ |
 | 证书有效期 | ✅ |
 | CRL 吊销检查 | ✅ `--crl`（校验 CRL 签名与有效期） |
-| OCSP 吊销检查 | ❌（后续） |
+| OCSP 吊销检查 | ✅ `--ocsp`（校验响应签名、有效期、OCSPSigning EKU） |
 | AIA 自动下载中间证书 | ❌ |
 
 ## 时间戳

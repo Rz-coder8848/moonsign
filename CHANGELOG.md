@@ -1,5 +1,13 @@
 # 更新日志
 
+## 0.8.0（2026-11-10）
+
+- 新增 OCSP 支持：
+  - 解析 OCSP 响应（成功/吊销/未知）；
+  - 校验响应签名、有效期、证书匹配和 OCSPSigning EKU；
+  - `verify --ocsp <response.der>`，被吊销时退出码 3；
+- 53 个测试，CI 覆盖 good 与 revoked 两条路径。
+
 ## 0.7.0（2026-11-10）
 
 - `verify` 会显示时间戳状态；`--tsa-anchors` 校验时间戳证书链；

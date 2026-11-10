@@ -1,20 +1,18 @@
-# 使用手册
+# 浣跨敤鎵嬪唽
 
-## 安装
+## 瀹夎
 
-作为 MoonBit 依赖：
-
+浣滀负 MoonBit 渚濊禆锛?
 ```sh
-moon add Rz-coder8848/moonsign@0.7.0
+moon add Rz-coder8848/moonsign@0.8.0
 ```
 
-从源码运行命令行（需要 MoonBit 工具链）：
-
+浠庢簮鐮佽繍琛屽懡浠よ锛堥渶瑕?MoonBit 宸ュ叿閾撅級锛?
 ```sh
 moon run cmd/moonsign -- help
 ```
 
-## 命令总览
+## 鍛戒护鎬昏
 
 ```
 moonsign sign   <in.pdf> --key <key.pem> --cert <cert.pem> [options]
@@ -25,93 +23,88 @@ moonsign tsa-request <signed.pdf> --out <request.der>
 moonsign tsa-embed <signed.pdf> --response <response.der> [--anchors <tsa-ca.pem>] --out <out.pdf>
 ```
 
-退出码：
-
-| 退出码 | 含义 |
+閫€鍑虹爜锛?
+| 閫€鍑虹爜 | 鍚箟 |
 | --- | --- |
-| 0 | 成功；验签通过（带 `--anchors` 时表示已链到信任根） |
-| 2 | 验签失败（文件被改、签名不对） |
-| 3 | 签名有效，但证书链不可信（链不到根、被吊销等） |
-| 1 | 用法错误、文件读写失败、格式不支持 |
+| 0 | 鎴愬姛锛涢獙绛鹃€氳繃锛堝甫 `--anchors` 鏃惰〃绀哄凡閾惧埌淇′换鏍癸級 |
+| 2 | 楠岀澶辫触锛堟枃浠惰鏀广€佺鍚嶄笉瀵癸級 |
+| 3 | 绛惧悕鏈夋晥锛屼絾璇佷功閾句笉鍙俊锛堥摼涓嶅埌鏍广€佽鍚婇攢绛夛級 |
+| 1 | 鐢ㄦ硶閿欒銆佹枃浠惰鍐欏け璐ャ€佹牸寮忎笉鏀寔 |
 
 ## sign
 
-| 参数 | 说明 |
+| 鍙傛暟 | 璇存槑 |
 | --- | --- |
-| `--key <pem>` | 私钥（PKCS#8 / PKCS#1 / SEC1，未加密） |
-| `--cert <pem>` | 签名者证书（叶子证书） |
-| `--out <pdf>` | 输出文件，默认 `<输入>.signed.pdf` |
-| `--chain <pem>` | 额外证书（中间证书），可包含多张 |
-| `--field <name>` | 签名字段名，默认 `Signature1` |
-| `--reason <text>` | 签名原因（写入签名字典） |
-| `--location <text>` | 签署地点 |
-| `--contact <text>` | 签署人联系方式 |
-| `--signing-time <unix>` | 指定签署时间（Unix 秒），默认当前时间 |
-| `--json` | 输出机器可读结果 |
+| `--key <pem>` | 绉侀挜锛圥KCS#8 / PKCS#1 / SEC1锛屾湭鍔犲瘑锛?|
+| `--cert <pem>` | 绛惧悕鑰呰瘉涔︼紙鍙跺瓙璇佷功锛?|
+| `--out <pdf>` | 杈撳嚭鏂囦欢锛岄粯璁?`<杈撳叆>.signed.pdf` |
+| `--chain <pem>` | 棰濆璇佷功锛堜腑闂磋瘉涔︼級锛屽彲鍖呭惈澶氬紶 |
+| `--field <name>` | 绛惧悕瀛楁鍚嶏紝榛樿 `Signature1` |
+| `--reason <text>` | 绛惧悕鍘熷洜锛堝啓鍏ョ鍚嶅瓧鍏革級 |
+| `--location <text>` | 绛剧讲鍦扮偣 |
+| `--contact <text>` | 绛剧讲浜鸿仈绯绘柟寮?|
+| `--signing-time <unix>` | 鎸囧畾绛剧讲鏃堕棿锛圲nix 绉掞級锛岄粯璁ゅ綋鍓嶆椂闂?|
+| `--json` | 杈撳嚭鏈哄櫒鍙缁撴灉 |
 
 ## verify
 
-| 参数 | 说明 |
+| 鍙傛暟 | 璇存槑 |
 | --- | --- |
-| `--cert <pem>` | 只检查"签名和这张证书是否匹配"，不判断信任 |
-| `--anchors <pem>` | 给一个或多个信任根，检查证书链 |
-| `--crl <pem>` | 吊销列表（PEM，可包含多个 `X509 CRL` 块） |
-| `--tsa-anchors <pem>` | 时间戳服务的信任根；给了就检查时间戳证书链 |
-| `--json` | 输出机器可读结果（含 `valid`、`trusted`、`chain_length`） |
+| `--cert <pem>` | 鍙鏌?绛惧悕鍜岃繖寮犺瘉涔︽槸鍚﹀尮閰?锛屼笉鍒ゆ柇淇′换 |
+| `--anchors <pem>` | 缁欎竴涓垨澶氫釜淇′换鏍癸紝妫€鏌ヨ瘉涔﹂摼 |
+| `--crl <pem>` | 鍚婇攢鍒楄〃锛圥EM锛屽彲鍖呭惈澶氫釜 `X509 CRL` 鍧楋級 |
+| `--tsa-anchors <pem>` | 鏃堕棿鎴虫湇鍔＄殑淇′换鏍癸紱缁欎簡灏辨鏌ユ椂闂存埑璇佷功閾?|
+| `--ocsp <der>` | OCSP 鍝嶅簲鏂囦欢锛涙鏌ョ鍚嶈€呰瘉涔︽槸鍚﹁鍚婇攢 |
+| `--json` | 杈撳嚭鏈哄櫒鍙缁撴灉锛堝惈 `valid`銆乣trusted`銆乣chain_length`锛?|
 
-`--cert` 和 `--anchors` 至少给一个。
-
+`--cert` 鍜?`--anchors` 鑷冲皯缁欎竴涓€?
 ## info
 
-列出 PDF 里的签名：字段名、subfilter、预留字节数、`ByteRange`。不会验证签名。
-
-## 时间戳（B-T）
-
-时间戳需要三样东西：已签名的 PDF、一个 RFC 3161 时间戳服务、它的响应。
-
+鍒楀嚭 PDF 閲岀殑绛惧悕锛氬瓧娈靛悕銆乻ubfilter銆侀鐣欏瓧鑺傛暟銆乣ByteRange`銆備笉浼氶獙璇佺鍚嶃€?
+## 鏃堕棿鎴筹紙B-T锛?
+鏃堕棿鎴抽渶瑕佷笁鏍蜂笢瑗匡細宸茬鍚嶇殑 PDF銆佷竴涓?RFC 3161 鏃堕棿鎴虫湇鍔°€佸畠鐨勫搷搴斻€?
 ```sh
-# 1. 生成请求（DER）
-moonsign tsa-request signed.pdf --out req.der
+# 1. 鐢熸垚璇锋眰锛圖ER锛?moonsign tsa-request signed.pdf --out req.der
 
-# 2. 发送给 TSA（任何 RFC 3161 服务）
-curl -H "Content-Type: application/timestamp-query" \
+# 2. 鍙戦€佺粰 TSA锛堜换浣?RFC 3161 鏈嶅姟锛?curl -H "Content-Type: application/timestamp-query" \
   --data-binary @req.der https://tsa.example/ -o resp.der
 
-# 3. 嵌入响应（--anchors 可选：验证 TSA 证书链与 timeStamping 用途）
+# 3. 宓屽叆鍝嶅簲锛?-anchors 鍙€夛細楠岃瘉 TSA 璇佷功閾句笌 timeStamping 鐢ㄩ€旓級
 moonsign tsa-embed signed.pdf --response resp.der --anchors tsa-ca.pem --out stamped.pdf
 ```
 
-`tsa-embed` 会先检查响应里的时间戳是否对应这份签名，再写进 PDF；给了 `--anchors` 还会验证 TSA 的签名、EKU 和证书链。签名值本身不变，只增加未签名属性（unsigned attributes），所以原来的签名仍然有效。
-
-验证带时间戳的 PDF：
-
+`tsa-embed` 浼氬厛妫€鏌ュ搷搴旈噷鐨勬椂闂存埑鏄惁瀵瑰簲杩欎唤绛惧悕锛屽啀鍐欒繘 PDF锛涚粰浜?`--anchors` 杩樹細楠岃瘉 TSA 鐨勭鍚嶃€丒KU 鍜岃瘉涔﹂摼銆傜鍚嶅€兼湰韬笉鍙橈紝鍙鍔犳湭绛惧悕灞炴€э紙unsigned attributes锛夛紝鎵€浠ュ師鏉ョ殑绛惧悕浠嶇劧鏈夋晥銆?
+楠岃瘉甯︽椂闂存埑鐨?PDF锛?
 ```sh
 moonsign verify stamped.pdf --cert cert.pem --tsa-anchors tsa-ca.pem
 ```
 
-会多输出一行时间戳状态：`VALID and TRUSTED`、`VALID (TSA chain not checked)` 或 `INVALID`。
+浼氬杈撳嚭涓€琛屾椂闂存埑鐘舵€侊細`VALID and TRUSTED`銆乣VALID (TSA chain not checked)` 鎴?`INVALID`銆?
+> 璇佷功閾炬牎楠屼娇鐢?PDF 閲岀殑 `signingTime`锛堟病鏈夊氨鐢ㄥ綋鍓嶆椂闂达級锛屾墍浠ヨ瘉涔﹀埌鏈熷悗锛屾棫绛惧悕涓嶄細鍥犱负"鐜板湪杩囨湡"鑰岃鎶ャ€?
+## OCSP
 
-> 证书链校验使用 PDF 里的 `signingTime`（没有就用当前时间），所以证书到期后，旧签名不会因为"现在过期"而误报。
+OCSP 闇€瑕佸厛鎷垮埌鍝嶅簲鏂囦欢锛圖ER锛夛細
 
-## 常见问题
+```sh
+moonsign verify signed.pdf --anchors root-ca.pem --ocsp ocsp-response.der
+```
 
-**"签名有效"到底说明什么？**
+浼氭鏌ュ搷搴旂鍚嶃€佹湁鏁堟湡銆佽瘉涔﹀尮閰嶏紝骞惰緭鍑?`OCSP: good` / `OCSP: REVOKED at <鏃堕棿>` / `OCSP: unknown`銆傝鍚婇攢鏃堕€€鍑虹爜涓?3銆?
+## 甯歌闂
 
-说明两件事：文件里签名的覆盖范围没有被改过；签名值能用你给的证书验证通过。
+**"绛惧悕鏈夋晥"鍒板簳璇存槑浠€涔堬紵**
 
-**怎么判断签名者可信？**
+璇存槑涓や欢浜嬶細鏂囦欢閲岀鍚嶇殑瑕嗙洊鑼冨洿娌℃湁琚敼杩囷紱绛惧悕鍊艰兘鐢ㄤ綘缁欑殑璇佷功楠岃瘉閫氳繃銆?
+**鎬庝箞鍒ゆ柇绛惧悕鑰呭彲淇★紵**
 
-用 `--anchors` 给出你信任的根证书。程序会检查：证书链、有效期、CA 资格、KeyUsage、路径长度，以及可选的 CRL 吊销。
+鐢?`--anchors` 缁欏嚭浣犱俊浠荤殑鏍硅瘉涔︺€傜▼搴忎細妫€鏌ワ細璇佷功閾俱€佹湁鏁堟湡銆丆A 璧勬牸銆並eyUsage銆佽矾寰勯暱搴︼紝浠ュ強鍙€夌殑 CRL 鍚婇攢銆?
+**璇佷功琚悐閿€浜嗘€庝箞鍔烇紵**
 
-**证书被吊销了怎么办？**
+鐢?`--crl` 缁欏嚭绛惧彂鏈烘瀯鍙戝竷鐨?CRL銆傝鍚婇攢鏃朵細杈撳嚭 `VALID but NOT TRUSTED`锛屽師鍥犲啓 `certificate has been revoked`銆?
+**涓轰粈涔堜笉鑳界粰宸叉湁绛惧悕鐨?PDF 鍐嶅姞涓€涓鍚嶏紵**
 
-用 `--crl` 给出签发机构发布的 CRL。被吊销时会输出 `VALID but NOT TRUSTED`，原因写 `certificate has been revoked`。
-
-**为什么不能给已有签名的 PDF 再加一个签名？**
-
-0.x 采用"整篇重写"的方式规避 PDF 增量更新的兼容问题，所以已有签名会失效。这一点会在后续版本解决。
-
-## 在代码里使用
+0.x 閲囩敤"鏁寸瘒閲嶅啓"鐨勬柟寮忚閬?PDF 澧為噺鏇存柊鐨勫吋瀹归棶棰橈紝鎵€浠ュ凡鏈夌鍚嶄細澶辨晥銆傝繖涓€鐐逛細鍦ㄥ悗缁増鏈В鍐炽€?
+## 鍦ㄤ唬鐮侀噷浣跨敤
 
 ```moonbit
 let options : @pades.SignOptions = {
@@ -125,16 +118,13 @@ let options : @pades.SignOptions = {
 }
 let signed = @pades.sign_pdf(pdf, key, cert, [], options)
 
-// 只验签名
+// 鍙獙绛惧悕
 let ok = @pades.verify_pdf(signed, cert)
 
-// 验签名 + 证书链
-let outcome = @pades.verify_pdf_with_anchors(signed, [root], now)
+// 楠岀鍚?+ 璇佷功閾?let outcome = @pades.verify_pdf_with_anchors(signed, [root], now)
 ```
 
-## 限制
+## 闄愬埗
 
-- 长期验证（B-LT）未实现；B-T 时间戳通过 `tsa-request` / `tsa-embed` 支持（需自备 TSA）；
-- 不支持加密 PDF；
-- 不支持已有签名的 PDF 追加签名；
-- 只支持 RSA PKCS#1 v1.5、ECDSA P-256 与 SHA-256（RSA 也支持 SHA-384/512）。
+- 闀挎湡楠岃瘉锛圔-LT锛夋湭瀹炵幇锛汢-T 鏃堕棿鎴抽€氳繃 `tsa-request` / `tsa-embed` 鏀寔锛堥渶鑷 TSA锛夛紱
+- 涓嶆敮鎸佸姞瀵?PDF锛?- 涓嶆敮鎸佸凡鏈夌鍚嶇殑 PDF 杩藉姞绛惧悕锛?- 鍙敮鎸?RSA PKCS#1 v1.5銆丒CDSA P-256 涓?SHA-256锛圧SA 涔熸敮鎸?SHA-384/512锛夈€?

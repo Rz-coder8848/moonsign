@@ -1,45 +1,33 @@
 # MoonSign
 
-用纯 MoonBit 写的 PDF 数字签名工具：**给 PDF 签名，并验证它有没有被改过。**
+鐢ㄧ函 MoonBit 鍐欑殑 PDF 鏁板瓧绛惧悕宸ュ叿锛?*缁?PDF 绛惧悕锛屽苟楠岃瘉瀹冩湁娌℃湁琚敼杩囥€?*
 
-> 当前是 0.7 开发版，功能可用但还不适合直接用于有法律效力的正式签署。
+> 褰撳墠鏄?0.7 寮€鍙戠増锛屽姛鑳藉彲鐢ㄤ絾杩樹笉閫傚悎鐩存帴鐢ㄤ簬鏈夋硶寰嬫晥鍔涚殑姝ｅ紡绛剧讲銆?
+## 瀹冭В鍐充粈涔堥棶棰?
+鍚堝悓銆佸彂绁ㄣ€佸綍鐢ㄩ€氱煡銆佹娴嬫姤鍛婅繖绫?PDF锛屽彂鍑哄幓涔嬪悗闇€瑕佽瘉鏄庝袱浠朵簨锛?
+1. 杩欎唤鏂囦欢纭疄鏄煇涓崟浣?涓汉绛剧殑锛?2. 绛惧畬涔嬪悗鍐呭娌℃湁琚敼杩囥€?
+鍥介檯閫氱敤鐨勫仛娉曞彨 **PAdES**锛圥DF 鐨勬暟瀛楃鍚嶆爣鍑嗭級銆侻oonBit 鐢熸€侀噷宸茬粡鏈?PDF 瑙ｆ瀽搴撳拰瀵嗙爜瀛﹀簱锛屼絾涓棿"鎶婄鍚嶅啓杩?PDF銆佸啀楠屽洖鏉?鐨勮繖涓€灞備竴鐩寸┖鐫€銆侻oonSign 琛ョ殑灏辨槸杩欎竴灞傘€?
+## 涓変釜浣跨敤鍦烘櫙
 
-## 它解决什么问题
-
-合同、发票、录用通知、检测报告这类 PDF，发出去之后需要证明两件事：
-
-1. 这份文件确实是某个单位/个人签的；
-2. 签完之后内容没有被改过。
-
-国际通用的做法叫 **PAdES**（PDF 的数字签名标准）。MoonBit 生态里已经有 PDF 解析库和密码学库，但中间"把签名写进 PDF、再验回来"的这一层一直空着。MoonSign 补的就是这一层。
-
-## 三个使用场景
-
-1. **发合同 / Offer**：业务系统生成 PDF，用公司证书签一次，对方用 Adobe、福昕或 WPS 打开就能看到"签名有效"。
-2. **电子发票 / 证明归档**：发布时签一次，几年后重新验签，能证明文件没有被改动。
-3. **CI 产物签名**：构建流程里自动给 PDF 报告签名，作为可追溯的交付凭证。
-
-## 现在能做什么
-
-| 能力 | 状态 |
+1. **鍙戝悎鍚?/ Offer**锛氫笟鍔＄郴缁熺敓鎴?PDF锛岀敤鍏徃璇佷功绛句竴娆★紝瀵规柟鐢?Adobe銆佺鏄曟垨 WPS 鎵撳紑灏辫兘鐪嬪埌"绛惧悕鏈夋晥"銆?2. **鐢靛瓙鍙戠エ / 璇佹槑褰掓。**锛氬彂甯冩椂绛句竴娆★紝鍑犲勾鍚庨噸鏂伴獙绛撅紝鑳借瘉鏄庢枃浠舵病鏈夎鏀瑰姩銆?3. **CI 浜х墿绛惧悕**锛氭瀯寤烘祦绋嬮噷鑷姩缁?PDF 鎶ュ憡绛惧悕锛屼綔涓哄彲杩芥函鐨勪氦浠樺嚟璇併€?
+## 鐜板湪鑳藉仛浠€涔?
+| 鑳藉姏 | 鐘舵€?|
 | --- | --- |
-| 签名算法 | RSA PKCS#1 v1.5、ECDSA P-256，SHA-256 |
-| 签名格式 | PAdES B-B（`ETSI.CAdES.detached`），CMS SignedData；可附加 B-T 时间戳 |
-| 验签 | 检查字节范围、摘要、签名；文件被改一个字节就失败 |
-| 证书链 | `--anchors` 指定信任根，检查签名者证书能否链到它 |
-| 吊销检查 | `--crl` 指定 CRL（PEM），拒绝已被吊销的证书 |
-| 命令行 | `sign` / `verify` / `info` |
-| 互操作 | OpenSSL 与 pyHanko 双向验证（CI 每次都跑） |
-| 时间戳 | RFC 3161：请求、嵌入、校验证书链（B-T）；`verify --tsa-anchors` 可复查 |
-| 平台 | Linux / macOS / Windows（CI 三平台跑测试） |
-| 发布 | mooncakes.io：[Rz-coder8848/moonsign@0.7.0](https://mooncakes.io/docs/Rz-coder8848/moonsign@0.7.0) |
+| 绛惧悕绠楁硶 | RSA PKCS#1 v1.5銆丒CDSA P-256锛孲HA-256 |
+| 绛惧悕鏍煎紡 | PAdES B-B锛坄ETSI.CAdES.detached`锛夛紝CMS SignedData锛涘彲闄勫姞 B-T 鏃堕棿鎴?|
+| 楠岀 | 妫€鏌ュ瓧鑺傝寖鍥淬€佹憳瑕併€佺鍚嶏紱鏂囦欢琚敼涓€涓瓧鑺傚氨澶辫触 |
+| 璇佷功閾?| `--anchors` 鎸囧畾淇′换鏍癸紝妫€鏌ョ鍚嶈€呰瘉涔﹁兘鍚﹂摼鍒板畠 |
+| 鍚婇攢妫€鏌?| `--crl` 鎸囧畾 CRL锛圥EM锛夛紝鎷掔粷宸茶鍚婇攢鐨勮瘉涔?|
+| OCSP | `--ocsp` 鎸囧畾 OCSP 鍝嶅簲锛圖ER锛夛紝妫€鏌ュ湪绾垮悐閿€鐘舵€?|
+| 鍛戒护琛?| `sign` / `verify` / `info` |
+| 浜掓搷浣?| OpenSSL 涓?pyHanko 鍙屽悜楠岃瘉锛圕I 姣忔閮借窇锛?|
+| 鏃堕棿鎴?| RFC 3161锛氳姹傘€佸祵鍏ャ€佹牎楠岃瘉涔﹂摼锛圔-T锛夛紱`verify --tsa-anchors` 鍙鏌?|
+| 骞冲彴 | Linux / macOS / Windows锛圕I 涓夊钩鍙拌窇娴嬭瘯锛?|
+| 鍙戝竷 | mooncakes.io锛歔Rz-coder8848/moonsign@0.8.0](https://mooncakes.io/docs/Rz-coder8848/moonsign@0.8.0) |
 
-## 快速开始
-
-作为依赖使用：`moon add Rz-coder8848/moonsign@0.7.0`。
-
-先准备一张空白 PDF 和一张测试证书（正式使用请换成你自己的证书）：
-
+## 蹇€熷紑濮?
+浣滀负渚濊禆浣跨敤锛歚moon add Rz-coder8848/moonsign@0.8.0`銆?
+鍏堝噯澶囦竴寮犵┖鐧?PDF 鍜屼竴寮犳祴璇曡瘉涔︼紙姝ｅ紡浣跨敤璇锋崲鎴愪綘鑷繁鐨勮瘉涔︼級锛?
 ```sh
 moon run cmd/mkpdf -- blank.pdf
 
@@ -53,7 +41,7 @@ moon run cmd/moonsign -- verify signed.pdf --cert cert.pem
 moon run cmd/moonsign -- info signed.pdf
 ```
 
-签名成功会看到：
+绛惧悕鎴愬姛浼氱湅鍒帮細
 
 ```
 Signed: signed.pdf
@@ -61,7 +49,7 @@ Field: Signature1
 Digest: SHA-256
 ```
 
-验签成功会看到：
+楠岀鎴愬姛浼氱湅鍒帮細
 
 ```
 Signature 1: Signature1
@@ -70,66 +58,64 @@ Result: VALID
   The document has not changed since signing.
 ```
 
-如果有人改了 PDF 里的内容，`verify` 会输出 `INVALID`，并以退出码 2 结束，方便脚本判断。
+濡傛灉鏈変汉鏀逛簡 PDF 閲岀殑鍐呭锛宍verify` 浼氳緭鍑?`INVALID`锛屽苟浠ラ€€鍑虹爜 2 缁撴潫锛屾柟渚胯剼鏈垽鏂€?
+### 妫€鏌?杩欏紶璇佷功鏄笉鏄彲淇＄殑"
 
-### 检查"这张证书是不是可信的"
-
-只看签名，只能说明"文件和证书对得上"。要判断签名者是不是你信任的机构，需要给出信任根：
-
+鍙湅绛惧悕锛屽彧鑳借鏄?鏂囦欢鍜岃瘉涔﹀寰椾笂"銆傝鍒ゆ柇绛惧悕鑰呮槸涓嶆槸浣犱俊浠荤殑鏈烘瀯锛岄渶瑕佺粰鍑轰俊浠绘牴锛?
 ```sh
-# 签名时把中间证书一起放进去
+# 绛惧悕鏃舵妸涓棿璇佷功涓€璧锋斁杩涘幓
 moon run cmd/moonsign -- sign blank.pdf --key leaf.key --cert leaf.crt \
   --chain intermediate.crt --out chain-signed.pdf
 
-# 验签时指定你信任的根证书
+# 楠岀鏃舵寚瀹氫綘淇′换鐨勬牴璇佷功
 moon run cmd/moonsign -- verify chain-signed.pdf --anchors root-ca.crt
 ```
 
-结果有三种：
+缁撴灉鏈変笁绉嶏細
 
-- `VALID and TRUSTED`：签名有效，且证书链能走到你给的根（退出码 0）；
-- `VALID but NOT TRUSTED`：签名有效，但链不到你给的根（退出码 3）；
-- `INVALID`：文件被改过或签名不对（退出码 2）。
+- `VALID and TRUSTED`锛氱鍚嶆湁鏁堬紝涓旇瘉涔﹂摼鑳借蛋鍒颁綘缁欑殑鏍癸紙閫€鍑虹爜 0锛夛紱
+- `VALID but NOT TRUSTED`锛氱鍚嶆湁鏁堬紝浣嗛摼涓嶅埌浣犵粰鐨勬牴锛堥€€鍑虹爜 3锛夛紱
+- `INVALID`锛氭枃浠惰鏀硅繃鎴栫鍚嶄笉瀵癸紙閫€鍑虹爜 2锛夈€?
+### 妫€鏌ヨ瘉涔︽湁娌℃湁琚悐閿€
 
-### 检查证书有没有被吊销
-
-如果签发机构把证书作废了，可以附上一份 CRL（证书吊销列表）：
+濡傛灉绛惧彂鏈烘瀯鎶婅瘉涔︿綔搴熶簡锛屽彲浠ラ檮涓婁竴浠?CRL锛堣瘉涔﹀悐閿€鍒楄〃锛夛細
 
 ```sh
 moon run cmd/moonsign -- verify signed.pdf \
   --anchors root-ca.pem --crl issuer.crl.pem
 ```
 
-证书被吊销时，结果会是 `VALID but NOT TRUSTED`，原因写 `certificate has been revoked`（退出码 3）。
-
-### 加时间戳（B-T）
-
-时间戳用来证明"这个签名是什么时候做的"。MoonSign 不直接联网，分三步：
+璇佷功琚悐閿€鏃讹紝缁撴灉浼氭槸 `VALID but NOT TRUSTED`锛屽師鍥犲啓 `certificate has been revoked`锛堥€€鍑虹爜 3锛夈€?
+### 鏌?OCSP锛堝湪绾垮悐閿€锛?
+OCSP 鏄彟涓€绉嶅悐閿€鏌ヨ鏂瑰紡銆侻oonSign 涓嶇洿鎺ヨ仈缃戯紝闇€瑕佸厛鎶婂搷搴斾繚瀛樻垚鏂囦欢锛堢敤 curl銆佹祻瑙堝櫒鎴栨満鏋勬彁渚涚殑宸ュ叿锛夛紝鍐嶄氦缁欏畠妫€鏌ワ細
 
 ```sh
-# 1. 从已签名的 PDF 生成时间戳请求
-moon run cmd/moonsign -- tsa-request signed.pdf --out req.der
+moon run cmd/moonsign -- verify signed.pdf \
+  --anchors root-ca.pem --ocsp ocsp-response.der
+```
 
-# 2. 把 req.der 发给任意 RFC 3161 时间戳服务（curl 示例）
-curl -H "Content-Type: application/timestamp-query" \
+杈撳嚭浼氬涓€琛?`OCSP: good`銆乣OCSP: REVOKED at ...` 鎴?`OCSP: unknown`銆傝鍚婇攢鏃堕€€鍑虹爜涓?3銆?
+### 鍔犳椂闂存埑锛圔-T锛?
+鏃堕棿鎴崇敤鏉ヨ瘉鏄?杩欎釜绛惧悕鏄粈涔堟椂鍊欏仛鐨?銆侻oonSign 涓嶇洿鎺ヨ仈缃戯紝鍒嗕笁姝ワ細
+
+```sh
+# 1. 浠庡凡绛惧悕鐨?PDF 鐢熸垚鏃堕棿鎴宠姹?moon run cmd/moonsign -- tsa-request signed.pdf --out req.der
+
+# 2. 鎶?req.der 鍙戠粰浠绘剰 RFC 3161 鏃堕棿鎴虫湇鍔★紙curl 绀轰緥锛?curl -H "Content-Type: application/timestamp-query" \
   --data-binary @req.der https://your-tsa.example/ -o resp.der
 
-# 3. 把响应嵌进 PDF（--anchors 用来验证 TSA 的证书链）
-moon run cmd/moonsign -- tsa-embed signed.pdf --response resp.der \
+# 3. 鎶婂搷搴斿祵杩?PDF锛?-anchors 鐢ㄦ潵楠岃瘉 TSA 鐨勮瘉涔﹂摼锛?moon run cmd/moonsign -- tsa-embed signed.pdf --response resp.der \
   --anchors tsa-ca.pem --out stamped.pdf
 ```
 
-签名本身不变，只是多了时间戳附件；`verify` 仍然通过。嵌入前会检查时间戳确实对应这个签名；给了 `--anchors` 时还会检查 TSA 证书链和 timeStamping 用途。
-
-验证时也可以检查时间戳：
-
+绛惧悕鏈韩涓嶅彉锛屽彧鏄浜嗘椂闂存埑闄勪欢锛沗verify` 浠嶇劧閫氳繃銆傚祵鍏ュ墠浼氭鏌ユ椂闂存埑纭疄瀵瑰簲杩欎釜绛惧悕锛涚粰浜?`--anchors` 鏃惰繕浼氭鏌?TSA 璇佷功閾惧拰 timeStamping 鐢ㄩ€斻€?
+楠岃瘉鏃朵篃鍙互妫€鏌ユ椂闂存埑锛?
 ```sh
 moon run cmd/moonsign -- verify stamped.pdf --cert cert.pem --tsa-anchors tsa-ca.pem
 ```
 
-输出里会多一行 `timestamp: VALID and TRUSTED`（或 `VALID (TSA chain not checked)`）。
-
-## 在代码里使用
+杈撳嚭閲屼細澶氫竴琛?`timestamp: VALID and TRUSTED`锛堟垨 `VALID (TSA chain not checked)`锛夈€?
+## 鍦ㄤ唬鐮侀噷浣跨敤
 
 ```moonbit
 let signed = @pades.sign_pdf(
@@ -148,42 +134,27 @@ let signed = @pades.sign_pdf(
 let ok = @pades.verify_pdf(signed, certificate)
 ```
 
-## 项目结构
+## 椤圭洰缁撴瀯
 
 ```
-der/      DER / ASN.1 基础编码（CMS、证书都靠它）
-x509/     证书解析、公钥提取
-crypto/   摘要、RSA、ECDSA（基于 mooncry）
-cms/      CMS SignedData 的构造、解析、验签
-pdf/      在 PDF 里放签名域、写 ByteRange、填签名
-pades/    对外入口：sign_pdf / verify_pdf
-pem/      读 PEM 格式的私钥和证书
-cmd/      命令行程序
-```
+der/      DER / ASN.1 鍩虹缂栫爜锛圕MS銆佽瘉涔﹂兘闈犲畠锛?x509/     璇佷功瑙ｆ瀽銆佸叕閽ユ彁鍙?crypto/   鎽樿銆丷SA銆丒CDSA锛堝熀浜?mooncry锛?cms/      CMS SignedData 鐨勬瀯閫犮€佽В鏋愩€侀獙绛?pdf/      鍦?PDF 閲屾斁绛惧悕鍩熴€佸啓 ByteRange銆佸～绛惧悕
+pades/    瀵瑰鍏ュ彛锛歴ign_pdf / verify_pdf
+pem/      璇?PEM 鏍煎紡鐨勭閽ュ拰璇佷功
+cmd/      鍛戒护琛岀▼搴?```
 
-## 现在明确不做
+## 鐜板湪鏄庣‘涓嶅仛
 
-- 不做 PDF 渲染/排版；
-- 不做证书颁发、时间戳服务、信任列表（这些是另一套系统）；
-- 暂不支持加密 PDF；
-- 暂不支持给"已经有签名"的 PDF 追加第二个签名（路线图里有）；
-- 0.1 版本没有经过安全审计。
+- 涓嶅仛 PDF 娓叉煋/鎺掔増锛?- 涓嶅仛璇佷功棰佸彂銆佹椂闂存埑鏈嶅姟銆佷俊浠诲垪琛紙杩欎簺鏄彟涓€濂楃郴缁燂級锛?- 鏆備笉鏀寔鍔犲瘑 PDF锛?- 鏆備笉鏀寔缁?宸茬粡鏈夌鍚?鐨?PDF 杩藉姞绗簩涓鍚嶏紙璺嚎鍥鹃噷鏈夛級锛?- 0.1 鐗堟湰娌℃湁缁忚繃瀹夊叏瀹¤銆?
+## 鎬庝箞楠岃瘉瀹冪湡鐨勮兘鐢?
+- 浠撳簱閲岀殑 30 澶氫釜娴嬭瘯瑕嗙洊锛氱紪鐮併€佽瘉涔﹁В鏋愩€丆MS 鏋勯€?楠岀銆丳DF 绛惧悕銆佺鏀规娴嬶紱
+- CI 鍦?Linux / macOS / Windows 涓婅窇娴嬭瘯锛?- CI 杩樹細鎶?MoonSign 鐢熸垚鐨?CMS 鍜?PDF 浜ょ粰 OpenSSL 楠岀锛岀‘淇濅笉鏄?鑷繁楠岃嚜宸?銆?
+## 鏇村鏂囨。
 
-## 怎么验证它真的能用
+- [浣跨敤鎵嬪唽](docs/USAGE.md)锛堝叏閮ㄥ懡浠や笌鍙傛暟锛?- [鏇存柊鏃ュ織](CHANGELOG.md)
+- [鍏抽敭鎶€鏈喅绛朷(docs/DECISIONS.md)
+- [RFC 瀵圭収琛╙(docs/RFC-MAP.md)
+- [鍏煎鎬х煩闃礭(docs/COMPATIBILITY.md)
+- [瀹夊叏璇存槑](docs/SECURITY.md)
 
-- 仓库里的 30 多个测试覆盖：编码、证书解析、CMS 构造/验签、PDF 签名、篡改检测；
-- CI 在 Linux / macOS / Windows 上跑测试；
-- CI 还会把 MoonSign 生成的 CMS 和 PDF 交给 OpenSSL 验签，确保不是"自己验自己"。
-
-## 更多文档
-
-- [使用手册](docs/USAGE.md)（全部命令与参数）
-- [更新日志](CHANGELOG.md)
-- [关键技术决策](docs/DECISIONS.md)
-- [RFC 对照表](docs/RFC-MAP.md)
-- [兼容性矩阵](docs/COMPATIBILITY.md)
-- [安全说明](docs/SECURITY.md)
-
-## 许可证
-
-Apache-2.0，见 [LICENSE](LICENSE)。
+## 璁稿彲璇?
+Apache-2.0锛岃 [LICENSE](LICENSE)銆?
