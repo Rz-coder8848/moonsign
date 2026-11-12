@@ -93,6 +93,7 @@ jobs:
           moon run cmd/moonsign -- info second.pdf
           moon run cmd/moonsign -- verify second.pdf --cert cert.pem --signature 1
           moon run cmd/moonsign -- verify second.pdf --cert cert.pem --signature 2
+          moon run cmd/moonsign -- verify second.pdf --cert cert.pem
       - name: Visible signature
         run: |
           moon run cmd/moonsign -- sign blank.pdf --out visible.pdf --key key.pem \

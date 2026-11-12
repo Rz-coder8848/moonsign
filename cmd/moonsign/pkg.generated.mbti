@@ -34,6 +34,8 @@ pub(all) struct CliOptions {
   mut json : Bool
 }
 
+type VerifyReport
+
 // Type aliases
 
 // Traits
