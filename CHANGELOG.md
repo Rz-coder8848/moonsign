@@ -1,5 +1,13 @@
 # 更新日志
 
+## 0.12.0（2026-11-12）
+
+- 签名框自动显示证书姓名：
+  - 新增 `x509.Certificate::common_name()`（支持 UTF8String / PrintableString / BMPString）；
+  - `--visible` 默认文字为 `Digitally signed by <CN>`；
+  - 非 ASCII 的 CN 回退为 `Digitally signed`（Helvetica 不含中文字形）；
+- 61 个测试，CI 校验签名框里出现证书 CN。
+
 ## 0.11.0（2026-11-12）
 
 - 可见签名外观：

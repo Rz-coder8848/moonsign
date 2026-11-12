@@ -327,6 +327,66 @@ pub fn Certificate::ec_public_key(self : Certificate) -> Bytes? {
 }
 
 ///|
+/// Decode a DirectoryString value from an X.509 name.
+fn decode_directory_string(value : @der.Tlv) -> String {
+  match value.tag {
+    0x0C => @utf8.decode_lossy(value.content)
+    0x13 | 0x16 => {
+      let buf = StringBuilder()
+      for i in 0..<value.content.length() {
+        buf.write_char(value.content[i].to_char())
+      }
+      buf.to_string()
+    }
+    0x1E => {
+      let buf = StringBuilder()
+      let mut i = 0
+      while i + 1 < value.content.length() {
+        let code = value.content[i].to_int() * 256 +
+          value.content[i + 1].to_int()
+        if code > 0 {
+          match code.to_char() {
+            Some(ch) => buf.write_char(ch)
+            None => ()
+          }
+        }
+        i = i + 2
+      }
+      buf.to_string()
+    }
+    _ => ""
+  }
+}
+
+///|
+/// The first Common Name (CN) in the subject, if present.
+pub fn Certificate::common_name(self : Certificate) -> String? {
+  let reader = @der.DerReader::new(self.subject_raw)
+  let name = read_seq(reader) catch { _ => return None }
+  while !name.is_empty() {
+    let rdn_tlv = read_tlv(name) catch { _ => return None }
+    if rdn_tlv.tag == 0x31 {
+      let rdn_reader = @der.DerReader::at(
+        rdn_tlv.content,
+        0,
+        rdn_tlv.content.length(),
+      ) catch {
+        _ => return None
+      }
+      while !rdn_reader.is_empty() {
+        let attribute = read_seq(rdn_reader) catch { _ => return None }
+        let oid = read_oid(attribute) catch { _ => return None }
+        let value = read_tlv(attribute) catch { _ => return None }
+        if oid == "2.5.4.3" {
+          return Some(decode_directory_string(value))
+        }
+      }
+    }
+  }
+  None
+}
+
+///|
 /// Whether the certificate lists `oid` in its Extended Key Usage extension.
 pub fn Certificate::has_extended_key_usage(
   self : Certificate,

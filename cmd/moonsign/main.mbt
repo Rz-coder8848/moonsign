@@ -360,6 +360,16 @@ fn load_material(
 }
 
 ///|
+fn is_ascii_text(text : String) -> Bool {
+  for i in 0..<text.length() {
+    if text.get_char(i).unwrap().to_int() >= 127 {
+      return false
+    }
+  }
+  true
+}
+
+///|
 fn parse_rect(text : String) -> (Int32, Int32, Int32, Int32) raise CliError {
   let parts : Array[Int32] = []
   let mut value = 0
@@ -414,7 +424,17 @@ fn sign_impl(args : Array[String]) -> Unit raise CliError {
     }
     let first_line = match options.appearance_text {
       Some(text) => text
-      None => "Digitally signed"
+      None => {
+        let name = match leaf.common_name() {
+          Some(value) => value
+          None => ""
+        }
+        if name.length() > 0 && is_ascii_text(name) {
+          "Digitally signed by " + name
+        } else {
+          "Digitally signed"
+        }
+      }
     }
     Some({
       x1,

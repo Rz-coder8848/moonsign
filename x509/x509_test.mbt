@@ -111,3 +111,17 @@ test "parse CRL and check revocation" {
   inspect(crl.is_revoked(intermediate.serial_raw), content="false")
   inspect(@x509.verify_crl_signature(crl, intermediate), content="true")
 }
+
+///|
+test "common name extraction" {
+  let rsa = chain_cert(@fixtures.rsa_cert_der_hex)
+  match rsa.common_name() {
+    Some(value) => inspect(value, content="MoonSign Test RSA")
+    None => fail("expected a common name")
+  }
+  let leaf = chain_cert(@fixtures.chain_leaf_der_hex)
+  match leaf.common_name() {
+    Some(value) => inspect(value, content="MoonSign Test Leaf")
+    None => fail("expected a common name")
+  }
+}
