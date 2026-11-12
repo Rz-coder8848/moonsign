@@ -42,6 +42,7 @@ test "sign and verify RSA PDF" {
     reason: None,
     location: None,
     contact: None,
+    appearance: None,
     hash: @crypto.Hash::Sha256,
   }
   let signed = @pades.sign_pdf(base_pdf(), rsa_signing_key(), cert, [], options) catch {
@@ -77,6 +78,7 @@ test "sign and verify ECDSA PDF" {
     reason: None,
     location: None,
     contact: None,
+    appearance: None,
     hash: @crypto.Hash::Sha256,
   }
   let signed = @pades.sign_pdf(
@@ -110,6 +112,7 @@ test "tampering invalidates the signature" {
     reason: None,
     location: None,
     contact: None,
+    appearance: None,
     hash: @crypto.Hash::Sha256,
   }
   let signed = @pades.sign_pdf(base_pdf(), rsa_signing_key(), cert, [], options) catch {
@@ -138,6 +141,7 @@ test "wrong certificate fails verification" {
     reason: None,
     location: None,
     contact: None,
+    appearance: None,
     hash: @crypto.Hash::Sha256,
   }
   let signed = @pades.sign_pdf(base_pdf(), rsa_signing_key(), cert, [], options) catch {
@@ -184,6 +188,7 @@ test "verify with a trusted anchor" {
     reason: None,
     location: None,
     contact: None,
+    appearance: None,
     hash: @crypto.Hash::Sha256,
   }
   let signed = @pades.sign_pdf(
@@ -293,6 +298,7 @@ test "sign with timestamp (B-T)" {
     reason: None,
     location: None,
     contact: None,
+    appearance: None,
     hash: @crypto.Hash::Sha256,
   }
   let signed = @pades.sign_pdf_with_timestamp(
@@ -340,4 +346,29 @@ test "sign with timestamp (B-T)" {
     Some(chain) => inspect(chain.trusted, content="true")
     None => fail("expected a TSA chain")
   }
+}
+
+///|
+test "sign with a visible appearance" {
+  let cert = rsa_certificate()
+  let options : @pades.SignOptions = {
+    field_name: "Signature1",
+    contents_chars: 16384,
+    signing_time: Some(1794500000L),
+    reason: None,
+    location: None,
+    contact: None,
+    appearance: Some({
+      x1: 36,
+      y1: 36,
+      x2: 300,
+      y2: 120,
+      lines: ["Digitally signed", "2026-11-10"],
+    }),
+    hash: @crypto.Hash::Sha256,
+  }
+  let signed = @pades.sign_pdf(base_pdf(), rsa_signing_key(), cert, [], options) catch {
+    e => abort(e.message())
+  }
+  inspect(@pades.verify_pdf(signed, cert) catch { _ => false }, content="true")
 }

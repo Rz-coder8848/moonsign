@@ -119,3 +119,25 @@ test "signature metadata is written" {
   inspect(text.contains("/ContactInfo"), content="true")
   inspect(text.contains("D:20261104120000Z"), content="true")
 }
+
+///|
+test "visible signature appearance" {
+  let base = @pdflite.pdf_minimum_valid_pdf() catch { _ => fail("minimal pdf") }
+  let bytes = @pdflite.pdf_write_document(base) catch { _ => fail("serialize") }
+  let prepared = prepare(bytes, "Signature1", 4096, appearance={
+    x1: 36,
+    y1: 36,
+    x2: 300,
+    y2: 120,
+    lines: ["Digitally signed", "2026-11-10"],
+  }) catch {
+    _ => fail("prepare")
+  }
+  let text = text_of_bytes(prepared)
+  inspect(text.contains("/AP"), content="true")
+  inspect(text.contains("Digitally signed"), content="true")
+  inspect(
+    text.contains("/Subtype /Form") || text.contains("/Subtype/Form"),
+    content="true",
+  )
+}

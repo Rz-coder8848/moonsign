@@ -25,6 +25,7 @@ fn main {
     reason: None,
     location: None,
     contact: None,
+    appearance: None,
     hash: @crypto.Hash::Sha256,
   }
   println("pages,bytes,sign_ms,verify_ms")

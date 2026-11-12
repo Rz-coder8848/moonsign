@@ -21,6 +21,7 @@
 | 加密 PDF | ❌ 明确拒绝 |
 | 线性化 PDF | ✅ 重写后正常 |
 | 多页 PDF | ✅ 签名放在第一页 |
+| 可见签名外观 | ✅ `--visible`（Form XObject + Helvetica） |
 
 ## 证书链
 

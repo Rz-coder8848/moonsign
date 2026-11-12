@@ -27,6 +27,9 @@ pub(all) struct CliOptions {
   mut ocsp : String?
   mut p12 : String?
   mut p12_password : String?
+  mut visible : Bool
+  mut rect : String?
+  mut appearance_text : String?
   mut json : Bool
 }
 

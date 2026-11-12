@@ -18,7 +18,9 @@ pub fn locate(Bytes, Int32) -> SignatureSlot raise PdfSignError
 
 pub fn paged_pdf(Int32) -> Bytes
 
-pub fn prepare(Bytes, String, Int32, reason? : String, location? : String, contact? : String, signing_time? : Int64) -> Bytes raise PdfSignError
+pub fn pdf_date_string(Int64) -> String
+
+pub fn prepare(Bytes, String, Int32, reason? : String, location? : String, contact? : String, signing_time? : Int64, appearance? : SignatureAppearance) -> Bytes raise PdfSignError
 
 pub fn replace_contents(Bytes, Bytes) -> Bytes raise PdfSignError
 
@@ -48,6 +50,14 @@ pub(all) struct PdfSignature {
   subfilter : String
   byte_range : Array[Int32]
   contents : Bytes
+}
+
+pub(all) struct SignatureAppearance {
+  x1 : Int32
+  y1 : Int32
+  x2 : Int32
+  y2 : Int32
+  lines : Array[String]
 }
 
 pub(all) struct SignatureSlot {

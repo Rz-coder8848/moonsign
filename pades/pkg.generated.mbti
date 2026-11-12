@@ -46,6 +46,7 @@ pub(all) struct SignOptions {
   reason : String?
   location : String?
   contact : String?
+  appearance : @pdf.SignatureAppearance?
   hash : @crypto.Hash
 }
 

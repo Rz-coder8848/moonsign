@@ -1,4 +1,15 @@
 ///|
+/// Optional visible signature appearance drawn on the page.
+pub(all) struct SignatureAppearance {
+  x1 : Int32
+  y1 : Int32
+  x2 : Int32
+  y2 : Int32
+  /// Text lines drawn inside the box (ASCII; other characters become `?`).
+  lines : Array[String]
+}
+
+///|
 /// Errors raised while adding a PDF signature placeholder.
 pub(all) suberror PdfSignError {
   PdfFailure(String)
@@ -242,7 +253,7 @@ fn pdf_pad4(value : Int32) -> String {
 
 ///|
 /// Format a Unix timestamp as a PDF date string (`D:YYYYMMDDHHmmSSZ`).
-fn pdf_date(unix : Int64) -> String {
+pub fn pdf_date_string(unix : Int64) -> String {
   let days64 = pdf_floor_div64(unix, Int64::from_int(86400))
   let seconds = unix - days64 * Int64::from_int(86400)
   let days = days64.to_int()
@@ -267,6 +278,40 @@ fn pdf_date(unix : Int64) -> String {
 /// `contents_chars` is the number of hex characters reserved for the CMS
 /// signature (must be even). Optional metadata is written into the signature
 /// dictionary (`/M`, `/Reason`, `/Location`, `/ContactInfo`).
+
+///|
+fn pdf_escape(text : String) -> String {
+  let buf = StringBuilder()
+  for i in 0..<text.length() {
+    let c = text.get_char(i).unwrap()
+    let code = c.to_int()
+    if c == '(' || c == ')' || c == '\\' {
+      buf.write_char('\\')
+    }
+    if code >= 32 && code < 127 {
+      buf.write_char(c)
+    } else {
+      buf.write_char('?')
+    }
+  }
+  buf.to_string()
+}
+
+///|
+fn appearance_content(lines : Array[String]) -> String {
+  let buf = StringBuilder()
+  buf.write_string("BT /Helvetica 9 Tf 4 4 Td ")
+  for i in 0..<lines.length() {
+    if i > 0 {
+      buf.write_string("0 -12 Td ")
+    }
+    buf.write_string("(" + pdf_escape(lines[i]) + ") Tj ")
+  }
+  buf.write_string("ET")
+  buf.to_string()
+}
+
+///|
 pub fn prepare(
   pdf : Bytes,
   field_name : String,
@@ -275,6 +320,7 @@ pub fn prepare(
   location? : String,
   contact? : String,
   signing_time? : Int64,
+  appearance? : SignatureAppearance,
 ) -> Bytes raise PdfSignError {
   if contents_chars < 64 || contents_chars % 2 != 0 {
     raise PdfSignError::Malformed("contents_chars must be an even number >= 64")
@@ -310,7 +356,9 @@ pub fn prepare(
   ]
   match signing_time {
     Some(value) =>
-      entries.push((name("M"), string_object(@utf8.encode(pdf_date(value)))))
+      entries.push(
+        (name("M"), string_object(@utf8.encode(pdf_date_string(value)))),
+      )
     None => ()
   }
   match reason {
@@ -330,7 +378,11 @@ pub fn prepare(
   }
   let signature_dictionary = dict(entries)
   let signature_number = doc.add_object(signature_dictionary)
-  let field = dict([
+  let rect_values = match appearance {
+    Some(spec) => [spec.x1, spec.y1, spec.x2, spec.y2]
+    None => [0, 0, 0, 0]
+  }
+  let field_entries : Array[(@pdfcore.PdfName, @pdfsyntax.PdfObject)] = [
     (name("Type"), name_object("Annot")),
     (name("Subtype"), name_object("Widget")),
     (name("FT"), name_object("Sig")),
@@ -340,9 +392,55 @@ pub fn prepare(
     (name("P"), indirect(page_number)),
     (
       name("Rect"),
-      array_object([int_object(0), int_object(0), int_object(0), int_object(0)]),
+      array_object([
+        int_object(rect_values[0]),
+        int_object(rect_values[1]),
+        int_object(rect_values[2]),
+        int_object(rect_values[3]),
+      ]),
     ),
-  ])
+  ]
+  match appearance {
+    Some(spec) => {
+      let width = if spec.x2 > spec.x1 { spec.x2 - spec.x1 } else { 1 }
+      let height = if spec.y2 > spec.y1 { spec.y2 - spec.y1 } else { 1 }
+      let font_number = doc.add_object(
+        dict([
+          (name("Type"), name_object("Font")),
+          (name("Subtype"), name_object("Type1")),
+          (name("BaseFont"), name_object("Helvetica")),
+        ]),
+      )
+      let resources = dict([
+        (name("Font"), dict([(name("Helvetica"), indirect(font_number))])),
+      ])
+      let appearance_dictionary = dict([
+        (name("Type"), name_object("XObject")),
+        (name("Subtype"), name_object("Form")),
+        (
+          name("BBox"),
+          array_object([
+            int_object(0),
+            int_object(0),
+            int_object(width),
+            int_object(height),
+          ]),
+        ),
+        (name("Resources"), resources),
+      ])
+      let content = appearance_content(spec.lines)
+      let appearance_object = @pdfsyntax.pdf_stream(
+        appearance_dictionary,
+        @pdfsyntax.PdfStreamData::StreamGot(@utf8.encode(content)),
+      )
+      let appearance_number = doc.add_object(appearance_object)
+      field_entries.push(
+        (name("AP"), dict([(name("N"), indirect(appearance_number))])),
+      )
+    }
+    None => ()
+  }
+  let field = dict(field_entries)
   let field_number = doc.add_object(field)
   append_annotation(doc, page_number, field_number)
   ensure_acroform(doc, field_number)

@@ -27,6 +27,7 @@ fn main {
     reason: None,
     location: None,
     contact: None,
+    appearance: None,
     hash: @crypto.Hash::Sha256,
   }
   let signed = @pades.sign_pdf(

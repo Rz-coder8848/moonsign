@@ -85,6 +85,9 @@ pub(all) struct CliOptions {
   mut ocsp : String?
   mut p12 : String?
   mut p12_password : String?
+  mut visible : Bool
+  mut rect : String?
+  mut appearance_text : String?
   mut json : Bool
 }
 
@@ -116,6 +119,9 @@ fn parse_options(args : Array[String]) -> CliOptions raise CliError {
     ocsp: None,
     p12: None,
     p12_password: None,
+    visible: false,
+    rect: None,
+    appearance_text: None,
     json: false,
   }
   let mut index = 0
@@ -123,6 +129,9 @@ fn parse_options(args : Array[String]) -> CliOptions raise CliError {
     let arg = args[index]
     if arg == "--json" {
       options.json = true
+      index = index + 1
+    } else if arg == "--visible" {
+      options.visible = true
       index = index + 1
     } else if arg == "--out" ||
       arg == "--key" ||
@@ -139,7 +148,9 @@ fn parse_options(args : Array[String]) -> CliOptions raise CliError {
       arg == "--tsa-anchors" ||
       arg == "--ocsp" ||
       arg == "--p12" ||
-      arg == "--p12-password" {
+      arg == "--p12-password" ||
+      arg == "--rect" ||
+      arg == "--appearance-text" {
       if index + 1 >= args.length() {
         raise CliError::Failure("missing value for " + arg)
       }
@@ -174,6 +185,10 @@ fn parse_options(args : Array[String]) -> CliOptions raise CliError {
         options.p12 = Some(value)
       } else if arg == "--p12-password" {
         options.p12_password = Some(value)
+      } else if arg == "--rect" {
+        options.rect = Some(value)
+      } else if arg == "--appearance-text" {
+        options.appearance_text = Some(value)
       } else {
         options.field = value
       }
@@ -345,6 +360,39 @@ fn load_material(
 }
 
 ///|
+fn parse_rect(text : String) -> (Int32, Int32, Int32, Int32) raise CliError {
+  let parts : Array[Int32] = []
+  let mut value = 0
+  let mut digits = 0
+  for i in 0..<text.length() {
+    let c = text.get_char(i).unwrap()
+    if c == ',' {
+      if digits == 0 {
+        raise CliError::Failure("invalid --rect: " + text)
+      }
+      parts.push(value)
+      value = 0
+      digits = 0
+    } else {
+      let digit = c.to_int() - 48
+      if digit < 0 || digit > 9 {
+        raise CliError::Failure("invalid --rect: " + text)
+      }
+      value = value * 10 + digit
+      digits = digits + 1
+    }
+  }
+  if digits == 0 {
+    raise CliError::Failure("invalid --rect: " + text)
+  }
+  parts.push(value)
+  if parts.length() != 4 {
+    raise CliError::Failure("--rect needs four comma-separated numbers")
+  }
+  (parts[0], parts[1], parts[2], parts[3])
+}
+
+///|
 fn sign_impl(args : Array[String]) -> Unit raise CliError {
   let options = parse_options(args)
   let input = require(options.input, "input PDF")
@@ -358,6 +406,26 @@ fn sign_impl(args : Array[String]) -> Unit raise CliError {
     Some(text) => parse_unix(text)
     None => now_seconds()
   }
+  let appearance : @pdf.SignatureAppearance? = if options.visible ||
+    options.rect is Some(_) {
+    let (x1, y1, x2, y2) = match options.rect {
+      Some(text) => parse_rect(text)
+      None => (36, 36, 300, 120)
+    }
+    let first_line = match options.appearance_text {
+      Some(text) => text
+      None => "Digitally signed"
+    }
+    Some({
+      x1,
+      y1,
+      x2,
+      y2,
+      lines: [first_line, @pdf.pdf_date_string(signing_time)],
+    })
+  } else {
+    None
+  }
   let sign_options : @pades.SignOptions = {
     field_name: options.field,
     contents_chars: 16384,
@@ -365,6 +433,7 @@ fn sign_impl(args : Array[String]) -> Unit raise CliError {
     reason: options.reason,
     location: options.location,
     contact: options.contact,
+    appearance,
     hash: @crypto.Hash::Sha256,
   }
   let signed = @pades.sign_pdf(
