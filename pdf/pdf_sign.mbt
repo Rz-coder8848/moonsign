@@ -321,6 +321,7 @@ pub fn prepare(
   contact? : String,
   signing_time? : Int64,
   appearance? : SignatureAppearance,
+  incremental? : Bool,
 ) -> Bytes raise PdfSignError {
   if contents_chars < 64 || contents_chars % 2 != 0 {
     raise PdfSignError::Malformed("contents_chars must be an even number >= 64")
@@ -444,8 +445,14 @@ pub fn prepare(
   let field_number = doc.add_object(field)
   append_annotation(doc, page_number, field_number)
   ensure_acroform(doc, field_number)
-  @pdflite.pdf_write_document(doc) catch {
-    e => raise PdfSignError::PdfFailure(@pdfcore.pdf_error_summary(e))
+  if incremental.unwrap_or(false) {
+    @pdflite.pdf_write_document_incremental_update_with_xref_stream(pdf, doc) catch {
+      e => raise PdfSignError::PdfFailure(@pdfcore.pdf_error_summary(e))
+    }
+  } else {
+    @pdflite.pdf_write_document(doc) catch {
+      e => raise PdfSignError::PdfFailure(@pdfcore.pdf_error_summary(e))
+    }
   }
 }
 

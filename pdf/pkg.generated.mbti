@@ -20,7 +20,7 @@ pub fn paged_pdf(Int32) -> Bytes
 
 pub fn pdf_date_string(Int64) -> String
 
-pub fn prepare(Bytes, String, Int32, reason? : String, location? : String, contact? : String, signing_time? : Int64, appearance? : SignatureAppearance) -> Bytes raise PdfSignError
+pub fn prepare(Bytes, String, Int32, reason? : String, location? : String, contact? : String, signing_time? : Int64, appearance? : SignatureAppearance, incremental? : Bool) -> Bytes raise PdfSignError
 
 pub fn replace_contents(Bytes, Bytes) -> Bytes raise PdfSignError
 

@@ -84,7 +84,15 @@ jobs:
           moon run cmd/moonsign -- info signed.pdf
           moon run cmd/moonsign -- sign blank.pdf --out signed-json.pdf --key key.pem --cert cert.pem --json
           python3 scripts/verify_pdf_signature.py signed.pdf
-      - name: Visible signature
+      - name: Append a second signature
+        run: |
+          moon run cmd/moonsign -- sign blank.pdf --out first.pdf \
+            --key key.pem --cert cert.pem --field Signature1
+          moon run cmd/moonsign -- sign first.pdf --out second.pdf \
+            --key key.pem --cert cert.pem --field Signature2
+          moon run cmd/moonsign -- info second.pdf
+          moon run cmd/moonsign -- verify second.pdf --cert cert.pem --signature 1
+          moon run cmd/moonsign -- verify second.pdf --cert cert.pem --signature 2      - name: Visible signature
         run: |
           moon run cmd/moonsign -- sign blank.pdf --out visible.pdf --key key.pem \
             --cert cert.pem --visible

@@ -30,6 +30,7 @@ pub(all) struct CliOptions {
   mut visible : Bool
   mut rect : String?
   mut appearance_text : String?
+  mut signature_index : String?
   mut json : Bool
 }
 

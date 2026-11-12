@@ -89,6 +89,7 @@ pub fn sign_pdf(
     contact?=options.contact,
     signing_time?=options.signing_time,
     appearance?=options.appearance,
+    incremental=@pdf.find_signatures(pdf_bytes).length() > 0,
   ) catch {
     e => raise PadesError::Pdf(e)
   }
@@ -151,11 +152,21 @@ pub fn verify_pdf(
   pdf_bytes : Bytes,
   certificate : @x509.Certificate,
 ) -> Bool raise PadesError {
+  verify_pdf_at(pdf_bytes, 0, certificate)
+}
+
+///|
+/// Verify signature number `index` (0-based) against a known certificate.
+pub fn verify_pdf_at(
+  pdf_bytes : Bytes,
+  index : Int32,
+  certificate : @x509.Certificate,
+) -> Bool raise PadesError {
   let signatures = @pdf.find_signatures(pdf_bytes)
-  if signatures.length() == 0 {
+  if index < 0 || index >= signatures.length() {
     raise PadesError::NoSignature
   }
-  let signature = signatures[0]
+  let signature = signatures[index]
   let parts = match @pdf.bytes_for_signature(pdf_bytes, signature) {
     Some(value) => value
     None => raise PadesError::ByteRangeMismatch
@@ -212,7 +223,7 @@ pub fn verify_pdf_with_anchors(
   anchors : Array[@x509.Certificate],
   at_time : Int64,
 ) -> VerifyOutcome raise PadesError {
-  verify_pdf_with_anchors_and_crls(pdf_bytes, anchors, [], at_time)
+  verify_pdf_with_anchors_and_crls_at(pdf_bytes, 0, anchors, [], at_time)
 }
 
 ///|
@@ -224,11 +235,23 @@ pub fn verify_pdf_with_anchors_and_crls(
   crls : Array[@x509.Crl],
   at_time : Int64,
 ) -> VerifyOutcome raise PadesError {
+  verify_pdf_with_anchors_and_crls_at(pdf_bytes, 0, anchors, crls, at_time)
+}
+
+///|
+/// Verify signature number `index` (0-based) with trust and revocation checks.
+pub fn verify_pdf_with_anchors_and_crls_at(
+  pdf_bytes : Bytes,
+  index : Int32,
+  anchors : Array[@x509.Certificate],
+  crls : Array[@x509.Crl],
+  at_time : Int64,
+) -> VerifyOutcome raise PadesError {
   let signatures = @pdf.find_signatures(pdf_bytes)
-  if signatures.length() == 0 {
+  if index < 0 || index >= signatures.length() {
     raise PadesError::NoSignature
   }
-  let signature = signatures[0]
+  let signature = signatures[index]
   let parts = match @pdf.bytes_for_signature(pdf_bytes, signature) {
     Some(value) => value
     None => raise PadesError::ByteRangeMismatch
@@ -299,6 +322,7 @@ pub fn sign_pdf_with_timestamp(
     contact?=options.contact,
     signing_time?=options.signing_time,
     appearance?=options.appearance,
+    incremental=@pdf.find_signatures(pdf_bytes).length() > 0,
   ) catch {
     e => raise PadesError::Pdf(e)
   }

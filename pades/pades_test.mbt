@@ -372,3 +372,60 @@ test "sign with a visible appearance" {
   }
   inspect(@pades.verify_pdf(signed, cert) catch { _ => false }, content="true")
 }
+
+///|
+test "append a second signature incrementally" {
+  let cert = rsa_certificate()
+  let options : @pades.SignOptions = {
+    field_name: "Signature1",
+    contents_chars: 16384,
+    signing_time: Some(1794500000L),
+    reason: None,
+    location: None,
+    contact: None,
+    appearance: None,
+    hash: @crypto.Hash::Sha256,
+  }
+  let first = @pades.sign_pdf(base_pdf(), rsa_signing_key(), cert, [], options) catch {
+    e => abort(e.message())
+  }
+  let second_options : @pades.SignOptions = {
+    field_name: "Signature2",
+    contents_chars: 16384,
+    signing_time: Some(1794500100L),
+    reason: None,
+    location: None,
+    contact: None,
+    appearance: None,
+    hash: @crypto.Hash::Sha256,
+  }
+  let second = @pades.sign_pdf(
+    first,
+    rsa_signing_key(),
+    cert,
+    [],
+    second_options,
+  ) catch {
+    e => abort(e.message())
+  }
+  inspect(second.length() > first.length(), content="true")
+  let mut prefix_same = true
+  for i in 0..<first.length() {
+    if second[i] != first[i] {
+      prefix_same = false
+    }
+  }
+  inspect(prefix_same, content="true")
+  inspect(
+    @pades.verify_pdf_at(second, 0, cert) catch {
+      _ => false
+    },
+    content="true",
+  )
+  inspect(
+    @pades.verify_pdf_at(second, 1, cert) catch {
+      _ => false
+    },
+    content="true",
+  )
+}

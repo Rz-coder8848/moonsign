@@ -88,6 +88,7 @@ pub(all) struct CliOptions {
   mut visible : Bool
   mut rect : String?
   mut appearance_text : String?
+  mut signature_index : String?
   mut json : Bool
 }
 
@@ -122,6 +123,7 @@ fn parse_options(args : Array[String]) -> CliOptions raise CliError {
     visible: false,
     rect: None,
     appearance_text: None,
+    signature_index: None,
     json: false,
   }
   let mut index = 0
@@ -150,7 +152,8 @@ fn parse_options(args : Array[String]) -> CliOptions raise CliError {
       arg == "--p12" ||
       arg == "--p12-password" ||
       arg == "--rect" ||
-      arg == "--appearance-text" {
+      arg == "--appearance-text" ||
+      arg == "--signature" {
       if index + 1 >= args.length() {
         raise CliError::Failure("missing value for " + arg)
       }
@@ -189,6 +192,8 @@ fn parse_options(args : Array[String]) -> CliOptions raise CliError {
         options.rect = Some(value)
       } else if arg == "--appearance-text" {
         options.appearance_text = Some(value)
+      } else if arg == "--signature" {
+        options.signature_index = Some(value)
       } else {
         options.field = value
       }
@@ -534,6 +539,7 @@ fn parse_unix(text : String) -> Int64 raise CliError {
 ///|
 fn report_timestamp(
   pdf_bytes : Bytes,
+  index : Int32,
   tsa_anchors_path : String?,
 ) -> Unit raise CliError {
   let anchors = match tsa_anchors_path {
@@ -545,7 +551,12 @@ fn report_timestamp(
     }
     None => []
   }
-  let outcome = @pades.verify_timestamp_at(pdf_bytes, 0, anchors, now_seconds()) catch {
+  let outcome = @pades.verify_timestamp_at(
+    pdf_bytes,
+    index,
+    anchors,
+    now_seconds(),
+  ) catch {
     _ => return
   }
   if !outcome.present {
@@ -579,6 +590,16 @@ fn verify_impl(args : Array[String]) -> Unit raise CliError {
   if signatures.length() == 0 {
     raise CliError::Failure("no signature found in " + input)
   }
+  let selected = match options.signature_index {
+    Some(text) => parse_unix(text).to_int()
+    None => 1
+  }
+  let index = if selected < 1 { 0 } else { selected - 1 }
+  if index >= signatures.length() {
+    raise CliError::Failure(
+      "signature " + (index + 1).to_string() + " does not exist",
+    )
+  }
   let cert_path = options.cert
   let anchors_path = options.anchors
   if cert_path is None && anchors_path is None {
@@ -597,8 +618,9 @@ fn verify_impl(args : Array[String]) -> Unit raise CliError {
         Some(path) => read_crls(path)
         None => []
       }
-      let outcome = @pades.verify_pdf_with_anchors_and_crls(
+      let outcome = @pades.verify_pdf_with_anchors_and_crls_at(
         pdf_bytes,
+        index,
         anchors,
         crls,
         now_seconds(),
@@ -618,7 +640,7 @@ fn verify_impl(args : Array[String]) -> Unit raise CliError {
         buf.write_string(",\"signatures\":")
         buf.write_string(signatures.length().to_string())
         buf.write_string(",\"field\":\"")
-        buf.write_string(json_escape(signatures[0].field_name))
+        buf.write_string(json_escape(signatures[index].field_name))
         buf.write_string("\"")
         match outcome.chain {
           Some(chain) => {
@@ -638,8 +660,13 @@ fn verify_impl(args : Array[String]) -> Unit raise CliError {
         buf.write_string("}")
         println(buf.to_string())
       } else {
-        println("Signature 1: " + signatures[0].field_name)
-        println("  subfilter: " + signatures[0].subfilter)
+        println(
+          "Signature " +
+          (index + 1).to_string() +
+          ": " +
+          signatures[index].field_name,
+        )
+        println("  subfilter: " + signatures[index].subfilter)
         if !outcome.signature_valid {
           println("Result: INVALID")
           println("  The document changed, or the signature does not verify.")
@@ -663,7 +690,7 @@ fn verify_impl(args : Array[String]) -> Unit raise CliError {
           }
         }
       }
-      report_timestamp(pdf_bytes, options.tsa_anchors)
+      report_timestamp(pdf_bytes, index, options.tsa_anchors)
       let mut ocsp_revoked = false
       match options.ocsp {
         Some(path) => {
@@ -728,7 +755,7 @@ fn verify_impl(args : Array[String]) -> Unit raise CliError {
       if certs.length() == 0 {
         raise CliError::Failure("no CERTIFICATE block found in " + path)
       }
-      let valid = @pades.verify_pdf(pdf_bytes, certs[0]) catch {
+      let valid = @pades.verify_pdf_at(pdf_bytes, index, certs[0]) catch {
         e => raise CliError::Failure(e.message())
       }
       if options.json {
@@ -738,12 +765,17 @@ fn verify_impl(args : Array[String]) -> Unit raise CliError {
           ",\"signatures\":" +
           signatures.length().to_string() +
           ",\"field\":\"" +
-          json_escape(signatures[0].field_name) +
+          json_escape(signatures[index].field_name) +
           "\"}",
         )
       } else {
-        println("Signature 1: " + signatures[0].field_name)
-        println("  subfilter: " + signatures[0].subfilter)
+        println(
+          "Signature " +
+          (index + 1).to_string() +
+          ": " +
+          signatures[index].field_name,
+        )
+        println("  subfilter: " + signatures[index].subfilter)
         if valid {
           println("Result: VALID")
           println("  The document has not changed since signing.")
@@ -755,7 +787,7 @@ fn verify_impl(args : Array[String]) -> Unit raise CliError {
           println("  The document changed, or the certificate does not match.")
         }
       }
-      report_timestamp(pdf_bytes, options.tsa_anchors)
+      report_timestamp(pdf_bytes, index, options.tsa_anchors)
       if options.ocsp is Some(_) {
         println("  OCSP: skipped (use --anchors so the issuer is available)")
       }
