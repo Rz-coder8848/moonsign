@@ -2,7 +2,7 @@
 
 用纯 MoonBit 写的 PDF 数字签名工具：**给 PDF 签名，并验证它有没有被改过。**
 
-> 当前是 0.13 开发版，功能可用但还不适合直接用于有法律效力的正式签署。
+> 当前是 0.14 开发版，功能可用但还不适合直接用于有法律效力的正式签署。
 
 ## 它解决什么问题
 
@@ -36,11 +36,11 @@
 | 互操作 | OpenSSL 与 pyHanko 双向验证（CI 每次都跑） |
 | 时间戳 | RFC 3161：请求、嵌入、校验证书链（B-T）；`verify --tsa-anchors` 可复查 |
 | 平台 | Linux / macOS / Windows（CI 三平台跑测试） |
-| 发布 | mooncakes.io：[Rz-coder8848/moonsign@0.13.0](https://mooncakes.io/docs/Rz-coder8848/moonsign@0.13.0) |
+| 发布 | mooncakes.io：[Rz-coder8848/moonsign@0.14.0](https://mooncakes.io/docs/Rz-coder8848/moonsign@0.14.0) |
 
 ## 快速开始
 
-作为依赖使用：`moon add Rz-coder8848/moonsign@0.13.0`。
+作为依赖使用：`moon add Rz-coder8848/moonsign@0.14.0`。
 
 先准备一张空白 PDF 和一张测试证书（正式使用请换成你自己的证书）：
 
@@ -83,6 +83,8 @@ moon run cmd/moonsign -- sign signed.pdf --field Signature2 \
 
 moon run cmd/moonsign -- verify signed-twice.pdf --cert cert.pem --signature 2
 ```
+
+默认会验证 PDF 里的**所有**签名；只验某一个时加 `--signature 2`。
 
 追加使用增量更新，旧字节不变，所以第一个签名仍然有效。
 

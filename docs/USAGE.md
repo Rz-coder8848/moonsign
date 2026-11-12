@@ -5,7 +5,7 @@
 作为 MoonBit 依赖：
 
 ```sh
-moon add Rz-coder8848/moonsign@0.13.0
+moon add Rz-coder8848/moonsign@0.14.0
 ```
 
 从源码运行命令行（需要 MoonBit 工具链）：
@@ -65,7 +65,7 @@ moonsign tsa-embed <signed.pdf> --response <response.der> [--anchors <tsa-ca.pem
 | `--crl <pem>` | 吊销列表（PEM，可包含多个 `X509 CRL` 块） |
 | `--tsa-anchors <pem>` | 时间戳服务的信任根；给了就检查时间戳证书链 |
 | `--ocsp <der>` | OCSP 响应文件；检查签名者证书是否被吊销 |
-| `--signature <n>` | 验证第 n 个签名（默认第 1 个） |
+| `--signature <n>` | 只验证第 n 个签名（默认验证全部） |
 | `--json` | 输出机器可读结果（含 `valid`、`trusted`、`chain_length`） |
 
 `--cert` 和 `--anchors` 至少给一个。
