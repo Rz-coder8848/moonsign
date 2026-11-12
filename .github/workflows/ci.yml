@@ -87,7 +87,7 @@ jobs:
       - name: Visible signature
         run: |
           moon run cmd/moonsign -- sign blank.pdf --out visible.pdf --key key.pem \
-            --cert cert.pem --visible --appearance-text "Digitally signed by CI"
+            --cert cert.pem --visible
           moon run cmd/moonsign -- verify visible.pdf --cert cert.pem
           grep -q "MoonSign CI" visible.pdf
       - name: Sign with a PKCS#12 file
