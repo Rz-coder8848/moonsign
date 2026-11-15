@@ -37,6 +37,7 @@ test "parse PKCS#8 RSA key" {
       )
     }
     @pem.PrivateKey::EcdsaP256(_) => fail("expected an RSA key")
+    @pem.PrivateKey::Sm2(_) => fail("expected an RSA key")
   }
 }
 
@@ -50,6 +51,7 @@ test "parse PKCS#8 EC key" {
     @pem.PrivateKey::EcdsaP256(scalar) =>
       inspect(@fixtures.hex_of_bytes(scalar), content=@fixtures.ec_priv_hex)
     @pem.PrivateKey::Rsa(_, _) => fail("expected an EC key")
+    @pem.PrivateKey::Sm2(_) => fail("expected an EC key")
   }
 }
 
@@ -64,4 +66,17 @@ test "parse certificate chain from PEM" {
   }
   inspect(certs.length(), content="1")
   inspect(certs[0].spki_algorithm_oid, content="1.2.840.113549.1.1.1")
+}
+
+///|
+test "parse an SM2 private key" {
+  let key = @pem.parse_private_key(
+    @fixtures.bytes_of_hex(@fixtures.sm2_key_der_hex),
+  ) catch {
+    e => fail(e.message())
+  }
+  match key {
+    @pem.PrivateKey::Sm2(scalar) => inspect(scalar.length(), content="32")
+    _ => fail("expected an SM2 key")
+  }
 }

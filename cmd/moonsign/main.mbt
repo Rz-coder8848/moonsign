@@ -270,6 +270,7 @@ fn signing_key_of(key : @pem.PrivateKey) -> @pades.SigningKey {
     @pem.PrivateKey::Rsa(modulus, private_exponent) =>
       @pades.SigningKey::Rsa(modulus, private_exponent)
     @pem.PrivateKey::EcdsaP256(scalar) => @pades.SigningKey::EcdsaP256(scalar)
+    @pem.PrivateKey::Sm2(scalar) => @pades.SigningKey::Sm2(scalar)
   }
 }
 
@@ -474,6 +475,10 @@ fn sign_impl(args : Array[String]) -> Unit raise CliError {
   } else {
     None
   }
+  let hash = match signing_key {
+    @pades.SigningKey::Sm2(_) => @crypto.Hash::Sm3
+    _ => @crypto.Hash::Sha256
+  }
   let sign_options : @pades.SignOptions = {
     field_name,
     contents_chars: 16384,
@@ -482,7 +487,7 @@ fn sign_impl(args : Array[String]) -> Unit raise CliError {
     location: options.location,
     contact: options.contact,
     appearance,
-    hash: @crypto.Hash::Sha256,
+    hash,
   }
   let signed = @pades.sign_pdf(
     pdf_bytes, signing_key, leaf, extra, sign_options,

@@ -55,6 +55,7 @@ pub fn Certificate::has_extended_key_usage(Self, String) -> Bool
 pub fn Certificate::is_self_issued(Self) -> Bool
 pub fn Certificate::is_valid_at(Self, Int64) -> Bool
 pub fn Certificate::rsa_public_key(Self) -> (Bytes, Bytes)?
+pub fn Certificate::sm2_public_key(Self) -> Bytes?
 
 pub(all) struct Crl {
   der : Bytes

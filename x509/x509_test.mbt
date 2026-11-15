@@ -125,3 +125,21 @@ test "common name extraction" {
     None => fail("expected a common name")
   }
 }
+
+///|
+test "parse and verify an SM2 certificate" {
+  let cert = @x509.parse_certificate(
+    @fixtures.bytes_of_hex(@fixtures.sm2_cert_der_hex),
+  ) catch {
+    e => fail(e.message())
+  }
+  match cert.sm2_public_key() {
+    Some(point) => inspect(point.length(), content="65")
+    None => fail("expected an SM2 public key")
+  }
+  inspect(@x509.verify_certificate_signature(cert, cert), content="true")
+  match cert.common_name() {
+    Some(name) => inspect(name, content="MoonSign SM2")
+    None => fail("expected a common name")
+  }
+}

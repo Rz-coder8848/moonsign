@@ -139,6 +139,8 @@ pub(all) enum PrivateKey {
   Rsa(Bytes, Bytes)
   /// ECDSA P-256: 32-byte private scalar.
   EcdsaP256(Bytes)
+  /// SM2: 32-byte private scalar.
+  Sm2(Bytes)
 }
 
 ///|
@@ -164,7 +166,33 @@ fn parse_ec_private(der : Bytes) -> PrivateKey raise PemError {
   if scalar.tag != @der.tag_octet_string {
     raise PemError::NotPrivateKey
   }
-  PrivateKey::EcdsaP256(scalar.content)
+  let mut curve : String? = None
+  match sequence.peek_tag() {
+    Some(tag) =>
+      if tag == 0xA0 {
+        let wrapper = read_tlv(sequence)
+        let inner = @der.DerReader::at(
+          wrapper.content,
+          0,
+          wrapper.content.length(),
+        ) catch {
+          e => raise PemError::Der(e)
+        }
+        let parameter = read_tlv(inner)
+        if parameter.tag == @der.tag_oid {
+          let oid = @der.decode_oid(parameter.content) catch {
+            e => raise PemError::Der(e)
+          }
+          curve = Some(oid)
+        }
+      }
+    None => ()
+  }
+  if curve == Some(@oids.sm2) {
+    PrivateKey::Sm2(scalar.content)
+  } else {
+    PrivateKey::EcdsaP256(scalar.content)
+  }
 }
 
 ///|
@@ -186,6 +214,7 @@ fn parse_pkcs8(der : Bytes) -> PrivateKey raise PemError {
   if algorithm_oid == @oids.rsa_encryption {
     parse_pkcs1_rsa(key.content)
   } else if algorithm_oid == @oids.ec_public_key || algorithm_oid == @oids.sm2 {
+    let mut curve_oid : String? = None
     match params {
       Some(raw) => {
         let param_reader = @der.DerReader::new(raw)
@@ -197,11 +226,20 @@ fn parse_pkcs8(der : Bytes) -> PrivateKey raise PemError {
           if curve != @oids.curve_p256 && curve != @oids.sm2 {
             raise PemError::UnsupportedCurve(curve)
           }
+          curve_oid = Some(curve)
         }
       }
       None => ()
     }
-    parse_ec_private(key.content)
+    let parsed = parse_ec_private(key.content)
+    if curve_oid == Some(@oids.sm2) || algorithm_oid == @oids.sm2 {
+      match parsed {
+        EcdsaP256(scalar) => PrivateKey::Sm2(scalar)
+        other => other
+      }
+    } else {
+      parsed
+    }
   } else {
     raise PemError::UnknownKey(algorithm_oid)
   }

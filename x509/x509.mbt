@@ -401,6 +401,24 @@ pub fn Certificate::has_extended_key_usage(
 }
 
 ///|
+/// SM2 public key (uncompressed point), when the SPKI is id-ecPublicKey with
+/// the SM2 curve.
+pub fn Certificate::sm2_public_key(self : Certificate) -> Bytes? {
+  if self.spki_algorithm_oid != @oids.ec_public_key {
+    return None
+  }
+  match self.curve_oid() {
+    Some(curve) =>
+      if curve == @oids.sm2 {
+        Some(self.public_key_bits)
+      } else {
+        None
+      }
+    None => None
+  }
+}
+
+///|
 /// Whether the subject and issuer names are identical (self-issued).
 pub fn Certificate::is_self_issued(self : Certificate) -> Bool {
   @der.der_bytes_compare(self.subject_raw, self.issuer_raw) == 0
@@ -431,6 +449,8 @@ fn signature_hash(oid : String) -> @crypto.Hash? {
     Some(@crypto.Hash::Sha384)
   } else if oid == @oids.sha512_with_rsa {
     Some(@crypto.Hash::Sha512)
+  } else if oid == @oids.sm2_with_sm3 {
+    Some(@crypto.Hash::Sm3)
   } else {
     None
   }
@@ -474,6 +494,11 @@ fn verify_signed_bytes(
     match issuer.ec_public_key() {
       Some(point) =>
         @crypto.verify_ecdsa_p256(hash, signed_bytes, signature_bytes, point)
+      None => false
+    }
+  } else if algorithm_oid == @oids.sm2_with_sm3 {
+    match issuer.sm2_public_key() {
+      Some(point) => @crypto.verify_sm2(point, signed_bytes, signature_bytes)
       None => false
     }
   } else {

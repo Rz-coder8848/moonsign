@@ -20,6 +20,8 @@ pub(all) enum SigningKey {
   Rsa(Bytes, Bytes)
   /// ECDSA P-256: 32-byte private scalar.
   EcdsaP256(Bytes)
+  /// SM2: 32-byte private scalar.
+  Sm2(Bytes)
 }
 
 ///|
@@ -97,44 +99,40 @@ pub fn sign_pdf(
     e => raise PadesError::Pdf(e)
   }
   let parts = @pdf.signed_ranges(sealed_pdf, slot)
-  let digest = @crypto.digest_parts(options.hash, parts)
+  let effective_hash = match key {
+    Sm2(_) => @crypto.Hash::Sm3
+    _ => options.hash
+  }
+  let digest = @crypto.digest_parts(effective_hash, parts)
   let signed_attrs = @cms.build_signed_attrs(
     @oids.id_data,
     digest,
     options.signing_time,
     certificate,
-    options.hash,
+    effective_hash,
   )
   let (signature, signature_oid) = match key {
     Rsa(modulus, private_exponent) => {
       let value = @crypto.sign_rsa_pkcs1(
-        options.hash,
-        signed_attrs,
-        modulus,
-        private_exponent,
+        effective_hash, signed_attrs, modulus, private_exponent,
       ) catch {
         e => raise PadesError::Crypto(e)
       }
-      (value, signature_oid_for_rsa(options.hash))
+      (value, signature_oid_for_rsa(effective_hash))
     }
     EcdsaP256(private_key) => {
       let value = @crypto.sign_ecdsa_p256(
-        options.hash,
-        signed_attrs,
-        private_key,
+        effective_hash, signed_attrs, private_key,
       ) catch {
         e => raise PadesError::Crypto(e)
       }
-      (value, signature_oid_for_ecdsa(options.hash))
+      (value, signature_oid_for_ecdsa(effective_hash))
     }
+    Sm2(private_key) =>
+      (@crypto.sign_sm2(private_key, signed_attrs), @oids.sm2_with_sm3)
   }
   let cms_bytes = @cms.assemble_signed_data(
-    signed_attrs,
-    signature,
-    options.hash,
-    signature_oid,
-    certificate,
-    extra_certs,
+    signed_attrs, signature, effective_hash, signature_oid, certificate, extra_certs,
     @oids.id_data,
   )
   @pdf.embed(sealed_pdf, slot, cms_bytes) catch {
@@ -330,38 +328,39 @@ pub fn sign_pdf_with_timestamp(
     e => raise PadesError::Pdf(e)
   }
   let parts = @pdf.signed_ranges(sealed_pdf, slot)
-  let digest = @crypto.digest_parts(options.hash, parts)
+  let effective_hash = match key {
+    Sm2(_) => @crypto.Hash::Sm3
+    _ => options.hash
+  }
+  let digest = @crypto.digest_parts(effective_hash, parts)
   let signed_attrs = @cms.build_signed_attrs(
     @oids.id_data,
     digest,
     options.signing_time,
     certificate,
-    options.hash,
+    effective_hash,
   )
   let (signature, signature_oid) = match key {
     Rsa(modulus, private_exponent) => {
       let value = @crypto.sign_rsa_pkcs1(
-        options.hash,
-        signed_attrs,
-        modulus,
-        private_exponent,
+        effective_hash, signed_attrs, modulus, private_exponent,
       ) catch {
         e => raise PadesError::Crypto(e)
       }
-      (value, signature_oid_for_rsa(options.hash))
+      (value, signature_oid_for_rsa(effective_hash))
     }
     EcdsaP256(private_key) => {
       let value = @crypto.sign_ecdsa_p256(
-        options.hash,
-        signed_attrs,
-        private_key,
+        effective_hash, signed_attrs, private_key,
       ) catch {
         e => raise PadesError::Crypto(e)
       }
-      (value, signature_oid_for_ecdsa(options.hash))
+      (value, signature_oid_for_ecdsa(effective_hash))
     }
+    Sm2(private_key) =>
+      (@crypto.sign_sm2(private_key, signed_attrs), @oids.sm2_with_sm3)
   }
-  let request = @tsa.build_request(signature, options.hash, true)
+  let request = @tsa.build_request(signature, effective_hash, true)
   let response = match transport(request) {
     Ok(value) => value
     Err(message) => raise PadesError::Tsa(message)
@@ -378,13 +377,13 @@ pub fn sign_pdf_with_timestamp(
     Some(value) => value
     None => raise PadesError::Tsa("timestamp response contains no token")
   }
-  if !@tsa.verify_token(token, signature, options.hash) {
+  if !@tsa.verify_token(token, signature, effective_hash) {
     raise PadesError::Tsa("timestamp token does not match the signature")
   }
   let cms_bytes = @cms.assemble_signed_data(
     signed_attrs,
     signature,
-    options.hash,
+    effective_hash,
     signature_oid,
     certificate,
     extra_certs,

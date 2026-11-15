@@ -34,6 +34,7 @@ pub(all) struct PemBlock {
 pub(all) enum PrivateKey {
   Rsa(Bytes, Bytes)
   EcdsaP256(Bytes)
+  Sm2(Bytes)
 }
 
 // Type aliases

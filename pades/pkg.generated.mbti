@@ -57,6 +57,7 @@ pub(all) struct SignOptions {
 pub(all) enum SigningKey {
   Rsa(Bytes, Bytes)
   EcdsaP256(Bytes)
+  Sm2(Bytes)
 }
 
 pub(all) struct TimestampOutcome {

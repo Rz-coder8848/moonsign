@@ -23,7 +23,8 @@ pub fn signature_algorithm_supported(oid : String) -> Bool {
   oid == @oids.sha512_with_rsa ||
   oid == @oids.ecdsa_with_sha256 ||
   oid == @oids.ecdsa_with_sha384 ||
-  oid == @oids.ecdsa_with_sha512
+  oid == @oids.ecdsa_with_sha512 ||
+  oid == @oids.sm2_with_sm3
 }
 
 ///|
@@ -64,6 +65,11 @@ pub fn verify_signer(
     si.signature_oid == @oids.ecdsa_with_sha512 {
     match cert.ec_public_key() {
       Some(point) => @crypto.verify_ecdsa_p256(hash, attrs, si.signature, point)
+      None => false
+    }
+  } else if si.signature_oid == @oids.sm2_with_sm3 {
+    match cert.sm2_public_key() {
+      Some(point) => @crypto.verify_sm2(point, attrs, si.signature)
       None => false
     }
   } else {

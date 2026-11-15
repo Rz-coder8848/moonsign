@@ -429,3 +429,76 @@ test "append a second signature incrementally" {
     content="true",
   )
 }
+
+///|
+test "sign and verify with SM2" {
+  let cert = @x509.parse_certificate(
+    @fixtures.bytes_of_hex(@fixtures.sm2_cert_der_hex),
+  ) catch {
+    _ => abort("sm2 cert")
+  }
+  let key = @pem.parse_private_key(
+    @fixtures.bytes_of_hex(@fixtures.sm2_key_der_hex),
+  ) catch {
+    _ => abort("sm2 key")
+  }
+  let scalar = match key {
+    @pem.PrivateKey::Sm2(value) => value
+    _ => abort("expected an SM2 key")
+  }
+  let options : @pades.SignOptions = {
+    field_name: "Signature1",
+    contents_chars: 16384,
+    signing_time: Some(1794500000L),
+    reason: None,
+    location: None,
+    contact: None,
+    appearance: None,
+    hash: @crypto.Hash::Sm3,
+  }
+  let signed = @pades.sign_pdf(
+    base_pdf(),
+    @pades.SigningKey::Sm2(scalar),
+    cert,
+    [],
+    options,
+  ) catch {
+    e => abort(e.message())
+  }
+  inspect(@pades.verify_pdf(signed, cert) catch { _ => false }, content="true")
+}
+
+///|
+test "SM2 standard vector" {
+  let public_key = @fixtures.bytes_of_hex(
+    "0409f9df311e5421a150dd7d161e4bc5c672179fad1833fc076bb08ff356f35020ccea490ce26775a52dc6ea718cc1aa600aed05fbf35e084a6632f6072da9ad13",
+  )
+  let raw = @fixtures.bytes_of_hex(
+    "f5a03b0648d2c4630eeac513e1bb81a15944da3827d5b74143ac7eaceee720b3b1b6aa29df212fd8763182bc0d421ca1bb9038fd1f7f42d4840b69c485bbc1aa",
+  )
+  let signature = @mooncry.sm2_sig_to_der(raw)
+  inspect(
+    @crypto.verify_sm2(public_key, b"message digest", signature),
+    content="true",
+  )
+}
+
+///|
+test "verify an OpenSSL SM2 signature with explicit ID" {
+  let cert = @x509.parse_certificate(
+    @fixtures.bytes_of_hex(@fixtures.sm2_cert_der_hex),
+  ) catch {
+    _ => abort("sm2 cert")
+  }
+  let point = match cert.sm2_public_key() {
+    Some(value) => value
+    None => abort("sm2 public key")
+  }
+  let signature = @fixtures.bytes_of_hex(
+    @fixtures.sm2_signature_explicit_id_hex,
+  )
+  inspect(
+    @crypto.verify_sm2(point, @utf8.encode("moonsign sm2 test"), signature),
+    content="true",
+  )
+}
