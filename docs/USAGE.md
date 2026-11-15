@@ -5,7 +5,7 @@
 作为 MoonBit 依赖：
 
 ```sh
-moon add Rz-coder8848/moonsign@0.14.0
+moon add Rz-coder8848/moonsign@0.15.0
 ```
 
 从源码运行命令行（需要 MoonBit 工具链）：
@@ -54,7 +54,7 @@ moonsign tsa-embed <signed.pdf> --response <response.der> [--anchors <tsa-ca.pem
 | `--signing-time <unix>` | 指定签署时间（Unix 秒），默认当前时间 |
 | `--json` | 输出机器可读结果 |
 
-如果输入的 PDF 已经有签名，`sign` 会自动改用增量追加，旧签名保持有效；此时要用 `--field` 指定一个新的字段名（例如 `Signature2`）。
+如果输入的 PDF 已经有签名，`sign` 会自动改用增量追加，旧签名保持有效；字段名默认从 `Signature1` 往后找空位（也可用 `--field` 指定）。
 
 ## verify
 

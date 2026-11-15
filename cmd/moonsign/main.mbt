@@ -408,6 +408,19 @@ fn parse_rect(text : String) -> (Int32, Int32, Int32, Int32) raise CliError {
 }
 
 ///|
+fn field_name_in_use(
+  signatures : Array[@pdf.PdfSignature],
+  name : String,
+) -> Bool {
+  for signature in signatures {
+    if signature.field_name == name {
+      return true
+    }
+  }
+  false
+}
+
+///|
 fn sign_impl(args : Array[String]) -> Unit raise CliError {
   let options = parse_options(args)
   let input = require(options.input, "input PDF")
@@ -417,6 +430,16 @@ fn sign_impl(args : Array[String]) -> Unit raise CliError {
   }
   let pdf_bytes = read_bytes(input)
   let (signing_key, leaf, extra) = load_material(options)
+  let existing = @pdf.find_signatures(pdf_bytes)
+  let mut field_name = options.field
+  if field_name_in_use(existing, field_name) {
+    let mut suffix = existing.length() + 1
+    while field_name_in_use(existing, "Signature" + suffix.to_string()) {
+      suffix = suffix + 1
+    }
+    field_name = "Signature" + suffix.to_string()
+    println("Note: " + options.field + " already exists; using " + field_name)
+  }
   let signing_time = match options.signing_time {
     Some(text) => parse_unix(text)
     None => now_seconds()
@@ -452,7 +475,7 @@ fn sign_impl(args : Array[String]) -> Unit raise CliError {
     None
   }
   let sign_options : @pades.SignOptions = {
-    field_name: options.field,
+    field_name,
     contents_chars: 16384,
     signing_time: Some(signing_time),
     reason: options.reason,

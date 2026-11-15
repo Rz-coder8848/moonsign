@@ -89,7 +89,7 @@ jobs:
           moon run cmd/moonsign -- sign blank.pdf --out first.pdf \
             --key key.pem --cert cert.pem --field Signature1
           moon run cmd/moonsign -- sign first.pdf --out second.pdf \
-            --key key.pem --cert cert.pem --field Signature2
+            --key key.pem --cert cert.pem
           moon run cmd/moonsign -- info second.pdf
           moon run cmd/moonsign -- verify second.pdf --cert cert.pem --signature 1
           moon run cmd/moonsign -- verify second.pdf --cert cert.pem --signature 2
