@@ -9,7 +9,7 @@
 | RSA PKCS#1 v1.5 | SHA-1 | ❌ | ❌ | 不支持（安全原因） |
 | ECDSA P-256 | SHA-256 | ✅ | ✅ | 确定性签名（RFC 6979） |
 | ECDSA P-256 | SHA-384 / SHA-512 | ❌ | ❌ | mooncry 目前只有 SHA-256 版本 |
-| SM2 / SM3 | SM3 | 规划 | 规划 | 0.2 之后 |
+| SM2 / SM3 | SM3 | ✅ | ✅ | 标准签名 ID，DER 签名；PDF 阅读器支持有限 |
 
 ## PDF 特性
 

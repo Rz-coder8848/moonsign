@@ -260,8 +260,7 @@ def main() -> None:
         "",
         f'pub let sm2_key_der_hex : String = "{der_hex(CERTS / "sm2.key.der")}"',
         "",
-        f'pub let sm2_signature_der_hex : String = "{der_hex(CERTS / "sm2.sig")}"',
-        "",
+
         f'pub let sm2_signature_explicit_id_hex : String = "{der_hex(CERTS / "sm2sig2.der")}"',
         "",
         f'pub let crl_der_hex : String = "{der_hex(CERTS / "crl.der")}"',

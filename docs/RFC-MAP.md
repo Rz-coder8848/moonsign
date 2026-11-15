@@ -14,6 +14,7 @@ MoonSign 的实现对照了下面这些公开规范。列出"哪条规范 → �
 | ISO 32000-1 §12.8 | PDF 签名与 AcroForm | `pdf/` | 签名域、Widget、ByteRange、Contents |
 | ISO 32000-2 §7.6.4 | 签名覆盖范围 | `pdf/` | ByteRange 回填与校验 |
 | RFC 7468 | PEM 文本编码 | `pem/` | 私钥、证书；PKCS#8 / PKCS#1 / SEC1 |
+| GB/T 32918 | SM2 签名算法 | `crypto/sm2.mbt` | 标准 ID、DER 签名、SM3；GA/T 证书链可验 |
 | RFC 3161 | 时间戳 | `tsa/` | 请求生成、响应解析、B-T 嵌入、TSA 签名/EKU/证书链 |
 
 ## 已知偏差

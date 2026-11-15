@@ -5,7 +5,7 @@
 作为 MoonBit 依赖：
 
 ```sh
-moon add Rz-coder8848/moonsign@0.15.0
+moon add Rz-coder8848/moonsign@0.16.0
 ```
 
 从源码运行命令行（需要 MoonBit 工具链）：
@@ -38,7 +38,7 @@ moonsign tsa-embed <signed.pdf> --response <response.der> [--anchors <tsa-ca.pem
 
 | 参数 | 说明 |
 | --- | --- |
-| `--key <pem>` | 私钥（PKCS#8 / PKCS#1 / SEC1，未加密） |
+| `--key <pem>` | 私钥（PKCS#8 / PKCS#1 / SEC1，未加密；支持 RSA、ECDSA P-256、SM2） |
 | `--cert <pem>` | 签名者证书（叶子证书） |
 | `--p12 <path>` | PKCS#12 文件（替代 `--key` + `--cert`） |
 | `--p12-password <text>` | PKCS#12 密码；也可用环境变量 `MOONSIGN_P12_PASSWORD` |
@@ -53,6 +53,8 @@ moonsign tsa-embed <signed.pdf> --response <response.der> [--anchors <tsa-ca.pem
 | `--contact <text>` | 签署人联系方式 |
 | `--signing-time <unix>` | 指定签署时间（Unix 秒），默认当前时间 |
 | `--json` | 输出机器可读结果 |
+
+摘要默认 SHA-256；检测到 SM2 私钥时自动改用 SM3。
 
 如果输入的 PDF 已经有签名，`sign` 会自动改用增量追加，旧签名保持有效；字段名默认从 `Signature1` 往后找空位（也可用 `--field` 指定）。
 
