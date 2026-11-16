@@ -109,7 +109,7 @@ jobs:
           moon run cmd/moonsign -- dss dss-base.pdf --cert chain.pem \
             --crl testdata/certs/crl.pem --ocsp testdata/certs/ocsp-good.der \
             --out dss.pdf
-          moon run cmd/moonsign -- verify dss.pdf --anchors testdata/certs/ca.crt
+          moon run cmd/moonsign -- verify dss.pdf --cert testdata/certs/leaf.crt
           grep -q "/DSS" dss.pdf
       - name: Verify using DSS material
         run: |
