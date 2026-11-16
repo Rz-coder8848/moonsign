@@ -12,6 +12,8 @@ pub fn add_empty_signature_field(@pdflite.PdfDocument, String) -> Unit raise Pdf
 
 pub fn bytes_for_signature(Bytes, PdfSignature) -> Array[Bytes]?
 
+pub fn dss_material(Bytes) -> DssMaterial raise PdfSignError
+
 pub fn embed(Bytes, SignatureSlot, Bytes) -> Bytes raise PdfSignError
 
 pub fn find_signatures(Bytes) -> Array[PdfSignature]
@@ -48,6 +50,12 @@ pub(all) suberror PdfSignError {
 pub fn PdfSignError::message(Self) -> String
 
 // Types and methods
+pub(all) struct DssMaterial {
+  certificates : Array[Bytes]
+  crls : Array[Bytes]
+  ocsps : Array[Bytes]
+}
+
 pub(all) struct PdfSignature {
   field_name : String
   subfilter : String

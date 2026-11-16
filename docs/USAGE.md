@@ -5,7 +5,7 @@
 作为 MoonBit 依赖：
 
 ```sh
-moon add Rz-coder8848/moonsign@0.19.0
+moon add Rz-coder8848/moonsign@0.20.0
 ```
 
 从源码运行命令行（需要 MoonBit 工具链）：
@@ -71,7 +71,7 @@ moonsign tsa-embed <signed.pdf> --response <response.der> [--anchors <tsa-ca.pem
 | `--signature <n>` | 只验证第 n 个签名（默认验证全部） |
 | `--json` | 输出机器可读结果（含 `valid`、`trusted`、`chain_length`） |
 
-`--cert` 和 `--anchors` 至少给一个。
+`--cert` 和 `--anchors` 至少给一个。如果 PDF 里有 DSS，`verify` 会自动使用其中的证书、CRL 和 OCSP 响应。
 
 ## info
 

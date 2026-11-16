@@ -111,6 +111,24 @@ jobs:
             --out dss.pdf
           moon run cmd/moonsign -- verify dss.pdf --anchors testdata/certs/ca.crt
           grep -q "/DSS" dss.pdf
+      - name: Verify using DSS material
+        run: |
+          moon run cmd/mkpdf -- dss-base.pdf
+          moon run cmd/moonsign -- sign dss-base.pdf --out leaf-only.pdf \
+            --key testdata/certs/leaf.key --cert testdata/certs/leaf.crt
+          moon run cmd/moonsign -- dss leaf-only.pdf --cert testdata/certs/int.crt \
+            --out leaf-dss.pdf
+          moon run cmd/moonsign -- verify leaf-dss.pdf --anchors testdata/certs/ca.crt
+          moon run cmd/moonsign -- dss leaf-only.pdf --cert testdata/certs/int.crt \
+            --crl testdata/certs/crl.pem --out leaf-dss-crl.pdf
+          set +e
+          moon run cmd/moonsign -- verify leaf-dss-crl.pdf --anchors testdata/certs/ca.crt
+          code=$?
+          set -e
+          if [ "$code" -ne 3 ]; then
+            echo "expected exit 3 (revoked via DSS), got $code"
+            exit 1
+          fi
       - name: SM2 signature
         run: |
           moon run cmd/moonsign -- sign blank.pdf --out sm2-signed.pdf \

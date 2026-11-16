@@ -62,3 +62,63 @@ pub fn add_dss(
     e => raise PdfSignError::PdfFailure(@pdfcore.pdf_error_summary(e))
   }
 }
+
+///|
+/// Validation material embedded in a PDF's Document Security Store.
+pub(all) struct DssMaterial {
+  certificates : Array[Bytes]
+  crls : Array[Bytes]
+  ocsps : Array[Bytes]
+}
+
+///|
+fn dss_entries(
+  doc : @pdflite.PdfDocument,
+  dss : @pdfsyntax.PdfObject,
+  key : String,
+) -> Array[Bytes] {
+  let out : Array[Bytes] = []
+  let array = match dss.lookup_immediate(name(key)) {
+    Some(value) => resolve(doc, value)
+    None => return out
+  }
+  let items = match array {
+    @pdfsyntax.PdfObject::PdfArray(values) => values
+    _ => return out
+  }
+  for item in items {
+    let object = resolve(doc, item)
+    match object {
+      @pdfsyntax.PdfObject::PdfStreamObject(stream) => {
+        let bytes = @pdfsyntax.pdf_stream_data_bytes(stream.data) catch {
+          _ => continue
+        }
+        out.push(bytes)
+      }
+      _ => ()
+    }
+  }
+  out
+}
+
+///|
+/// Read certificates, CRLs and OCSP responses from a PDF's DSS.
+pub fn dss_material(pdf : Bytes) -> DssMaterial raise PdfSignError {
+  let doc = @pdflite.pdf_read_document_from_bytes(pdf) catch {
+    e => raise PdfSignError::PdfFailure(@pdfcore.pdf_error_summary(e))
+  }
+  let empty : DssMaterial = { certificates: [], crls: [], ocsps: [], }
+  if doc.is_encrypted() {
+    return empty
+  }
+  let catalog = doc.catalog() catch { _ => return empty }
+  let dss = match catalog.lookup_immediate(name("DSS")) {
+    Some(value) => resolve(doc, value)
+    None => return empty
+  }
+  {
+    certificates: dss_entries(doc, dss, "Certs"),
+    crls: dss_entries(doc, dss, "CRLs"),
+    ocsps: dss_entries(doc, dss, "OCSPs"),
+  }
+}

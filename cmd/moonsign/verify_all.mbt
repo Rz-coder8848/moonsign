@@ -14,6 +14,26 @@ struct VerifyReport {
 }
 
 ///|
+fn parse_dss_certs(items : Array[Bytes]) -> Array[@x509.Certificate] {
+  let out : Array[@x509.Certificate] = []
+  for der in items {
+    let cert = @x509.parse_certificate(der) catch { _ => continue }
+    out.push(cert)
+  }
+  out
+}
+
+///|
+fn parse_dss_crls(items : Array[Bytes]) -> Array[@x509.Crl] {
+  let out : Array[@x509.Crl] = []
+  for der in items {
+    let crl = @x509.parse_crl(der) catch { _ => continue }
+    out.push(crl)
+  }
+  out
+}
+
+///|
 fn verify_one(
   pdf_bytes : Bytes,
   index : Int32,
@@ -23,6 +43,8 @@ fn verify_one(
   anchors : Array[@x509.Certificate]?,
   crls : Array[@x509.Crl],
   tsa_anchors : Array[@x509.Certificate],
+  dss_certs : Array[@x509.Certificate],
+  dss_ocsps : Array[Bytes],
   now : Int64,
 ) -> VerifyReport raise CliError {
   let signature = signatures[index]
@@ -35,7 +57,12 @@ fn verify_one(
   match anchors {
     Some(list) => {
       let outcome = @pades.verify_pdf_with_anchors_and_crls_at(
-        pdf_bytes, index, list, crls, now,
+        pdf_bytes,
+        index,
+        list,
+        crls,
+        now,
+        extra_certs=dss_certs,
       ) catch {
         e => raise CliError::Failure(e.message())
       }
@@ -96,13 +123,16 @@ fn verify_one(
     None => ()
   }
   let mut ocsp_status : String? = None
-  match options.ocsp {
-    Some(path) =>
+  let ocsp_bytes : Bytes? = match options.ocsp {
+    Some(path) => Some(read_bytes(path))
+    None => if dss_ocsps.length() > 0 { Some(dss_ocsps[0]) } else { None }
+  }
+  match ocsp_bytes {
+    Some(bytes) =>
       match signer {
         Some(cert) =>
           match issuer {
             Some(issuer_cert) => {
-              let bytes = read_bytes(path)
               let response = @ocsp.parse_response(bytes) catch {
                 e =>
                   raise CliError::Failure(
@@ -247,6 +277,23 @@ fn verify_all_impl(args : Array[String]) -> Unit raise CliError {
     }
     None => []
   }
+  let dss_material = Some(@pdf.dss_material(pdf_bytes)) catch { _ => None }
+  let mut dss_certs : Array[@x509.Certificate] = []
+  let mut dss_ocsps : Array[Bytes] = []
+  let all_crls : Array[@x509.Crl] = []
+  for crl in crls {
+    all_crls.push(crl)
+  }
+  match dss_material {
+    Some(material) => {
+      dss_certs = parse_dss_certs(material.certificates)
+      dss_ocsps = material.ocsps
+      for crl in parse_dss_crls(material.crls) {
+        all_crls.push(crl)
+      }
+    }
+    None => ()
+  }
   let indices : Array[Int32] = match options.signature_index {
     Some(text) => {
       let selected = parse_unix(text).to_int()
@@ -268,8 +315,8 @@ fn verify_all_impl(args : Array[String]) -> Unit raise CliError {
   for index in indices {
     reports.push(
       verify_one(
-        pdf_bytes, index, signatures, options, certs, anchors, crls, tsa_anchors,
-        now,
+        pdf_bytes, index, signatures, options, certs, anchors, all_crls, tsa_anchors,
+        dss_certs, dss_ocsps, now,
       ),
     )
   }

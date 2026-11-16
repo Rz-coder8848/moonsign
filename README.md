@@ -2,7 +2,7 @@
 
 用纯 MoonBit 写的 PDF 数字签名工具：**给 PDF 签名，并验证它有没有被改过。**
 
-> 当前是 0.19 开发版，功能可用但还不适合直接用于有法律效力的正式签署。
+> 当前是 0.20 开发版，功能可用但还不适合直接用于有法律效力的正式签署。
 
 ## 它解决什么问题
 
@@ -35,15 +35,16 @@
 | 追加签名 | 对已签名 PDF 再签一次（增量更新，旧签名不失效） |
 | 加密 PDF | `--pdf-password` 读取并签名（输出为解密后的 PDF） |
 | 长期验证材料 | `dss` 命令把证书/CRL/OCSP 嵌入 PDF（DSS） |
+| DSS 自动验证 | `verify` 自动使用 PDF 里 DSS 的证书、CRL、OCSP |
 | 空白签名域 | 表单里已有同名空白 `/Sig` 字段时直接填入，不重复建字段 |
 | 互操作 | OpenSSL 与 pyHanko 双向验证（CI 每次都跑） |
 | 时间戳 | RFC 3161：请求、嵌入、校验证书链（B-T）；`verify --tsa-anchors` 可复查 |
 | 平台 | Linux / macOS / Windows（CI 三平台跑测试） |
-| 发布 | mooncakes.io：[Rz-coder8848/moonsign@0.19.0](https://mooncakes.io/docs/Rz-coder8848/moonsign@0.19.0) |
+| 发布 | mooncakes.io：[Rz-coder8848/moonsign@0.20.0](https://mooncakes.io/docs/Rz-coder8848/moonsign@0.20.0) |
 
 ## 快速开始
 
-作为依赖使用：`moon add Rz-coder8848/moonsign@0.19.0`。
+作为依赖使用：`moon add Rz-coder8848/moonsign@0.20.0`。
 
 先准备一张空白 PDF 和一张测试证书（正式使用请换成你自己的证书）：
 

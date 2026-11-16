@@ -24,7 +24,7 @@ pub fn verify_pdf_with_anchors(Bytes, Array[@x509.Certificate], Int64) -> Verify
 
 pub fn verify_pdf_with_anchors_and_crls(Bytes, Array[@x509.Certificate], Array[@x509.Crl], Int64) -> VerifyOutcome raise PadesError
 
-pub fn verify_pdf_with_anchors_and_crls_at(Bytes, Int32, Array[@x509.Certificate], Array[@x509.Crl], Int64) -> VerifyOutcome raise PadesError
+pub fn verify_pdf_with_anchors_and_crls_at(Bytes, Int32, Array[@x509.Certificate], Array[@x509.Crl], Int64, extra_certs? : Array[@x509.Certificate]) -> VerifyOutcome raise PadesError
 
 pub fn verify_timestamp_at(Bytes, Int32, Array[@x509.Certificate], Int64) -> TimestampOutcome raise PadesError
 

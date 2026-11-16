@@ -247,6 +247,7 @@ pub fn verify_pdf_with_anchors_and_crls_at(
   anchors : Array[@x509.Certificate],
   crls : Array[@x509.Crl],
   at_time : Int64,
+  extra_certs? : Array[@x509.Certificate],
 ) -> VerifyOutcome raise PadesError {
   let signatures = @pdf.find_signatures(pdf_bytes)
   if index < 0 || index >= signatures.length() {
@@ -284,6 +285,13 @@ pub fn verify_pdf_with_anchors_and_crls_at(
       }
       let parsed = @x509.parse_certificate(der) catch { _ => continue }
       intermediates.push(parsed)
+    }
+    match extra_certs {
+      Some(list) =>
+        for certificate in list {
+          intermediates.push(certificate)
+        }
+      None => ()
     }
     let built : Result[@trust.Chain, String] = Ok(
       @trust.build_chain_with_crls(
