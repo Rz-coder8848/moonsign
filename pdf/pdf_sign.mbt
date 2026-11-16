@@ -313,6 +313,82 @@ fn appearance_content(lines : Array[String]) -> String {
 }
 
 ///|
+fn find_empty_signature_field(
+  doc : @pdflite.PdfDocument,
+  field_name : String,
+) -> Int32? {
+  let catalog = doc.catalog() catch { _ => return None }
+  let acroform = match catalog.lookup_immediate(name("AcroForm")) {
+    Some(value) => resolve(doc, value)
+    None => return None
+  }
+  let fields = match acroform.lookup_immediate(name("Fields")) {
+    Some(value) => resolve(doc, value)
+    None => return None
+  }
+  let values = match fields {
+    @pdfsyntax.PdfObject::PdfArray(items) => items
+    _ => return None
+  }
+  for reference in values {
+    let number = match reference {
+      @pdfsyntax.PdfObject::PdfIndirect(value) => value
+      _ => continue
+    }
+    let field = doc.lookup_object_or_null(number)
+    let field_type = match field.lookup_immediate(name("FT")) {
+      Some(value) => resolve(doc, value)
+      None => continue
+    }
+    let is_signature = match field_type {
+      @pdfsyntax.PdfObject::PdfNameObject(value) => text_of_name(value) == "Sig"
+      _ => false
+    }
+    if !is_signature {
+      continue
+    }
+    let matches = match field.lookup_immediate(name("T")) {
+      Some(@pdfsyntax.PdfObject::PdfString(value)) =>
+        text_of_bytes(value) == field_name
+      Some(@pdfsyntax.PdfObject::PdfNameObject(value)) =>
+        text_of_name(value) == field_name
+      _ => false
+    }
+    if !matches {
+      continue
+    }
+    match field.lookup_immediate(name("V")) {
+      None => return Some(number)
+      Some(_) => ()
+    }
+  }
+  None
+}
+
+///|
+fn mark_sig_flags(doc : @pdflite.PdfDocument) -> Unit raise PdfSignError {
+  let catalog = doc.catalog() catch {
+    e => raise PdfSignError::PdfFailure(@pdfcore.pdf_error_summary(e))
+  }
+  match catalog.lookup_immediate(name("AcroForm")) {
+    Some(existing) =>
+      match existing {
+        @pdfsyntax.PdfObject::PdfIndirect(number) => {
+          let acroform = doc.lookup_object_or_null(number)
+          let updated = set_entry(acroform, name("SigFlags"), int_object(3))
+          doc.add_object_given_number(number, updated)
+        }
+        _ => {
+          let updated = set_entry(existing, name("SigFlags"), int_object(3))
+          let new_catalog = set_entry(catalog, name("AcroForm"), updated)
+          doc.add_object_given_number(doc.root(), new_catalog)
+        }
+      }
+    None => ()
+  }
+}
+
+///|
 pub fn prepare(
   pdf : Bytes,
   field_name : String,
@@ -399,72 +475,138 @@ pub fn prepare(
   }
   let signature_dictionary = dict(entries)
   let signature_number = doc.add_object(signature_dictionary)
-  let rect_values = match appearance {
-    Some(spec) => [spec.x1, spec.y1, spec.x2, spec.y2]
-    None => [0, 0, 0, 0]
-  }
-  let field_entries : Array[(@pdfcore.PdfName, @pdfsyntax.PdfObject)] = [
-    (name("Type"), name_object("Annot")),
-    (name("Subtype"), name_object("Widget")),
-    (name("FT"), name_object("Sig")),
-    (name("T"), string_object(@utf8.encode(field_name))),
-    (name("V"), indirect(signature_number)),
-    (name("F"), int_object(4)),
-    (name("P"), indirect(page_number)),
-    (
-      name("Rect"),
-      array_object([
-        int_object(rect_values[0]),
-        int_object(rect_values[1]),
-        int_object(rect_values[2]),
-        int_object(rect_values[3]),
-      ]),
-    ),
-  ]
-  match appearance {
-    Some(spec) => {
-      let width = if spec.x2 > spec.x1 { spec.x2 - spec.x1 } else { 1 }
-      let height = if spec.y2 > spec.y1 { spec.y2 - spec.y1 } else { 1 }
-      let font_number = doc.add_object(
-        dict([
-          (name("Type"), name_object("Font")),
-          (name("Subtype"), name_object("Type1")),
-          (name("BaseFont"), name_object("Helvetica")),
-        ]),
+  match find_empty_signature_field(doc, field_name) {
+    Some(existing_number) => {
+      let existing = doc.lookup_object_or_null(existing_number)
+      let mut updated = set_entry(
+        existing,
+        name("V"),
+        indirect(signature_number),
       )
-      let resources = dict([
-        (name("Font"), dict([(name("Helvetica"), indirect(font_number))])),
-      ])
-      let appearance_dictionary = dict([
-        (name("Type"), name_object("XObject")),
-        (name("Subtype"), name_object("Form")),
+      match appearance {
+        Some(spec) => {
+          let width = if spec.x2 > spec.x1 { spec.x2 - spec.x1 } else { 1 }
+          let height = if spec.y2 > spec.y1 { spec.y2 - spec.y1 } else { 1 }
+          updated = set_entry(
+            updated,
+            name("Rect"),
+            array_object([
+              int_object(spec.x1),
+              int_object(spec.y1),
+              int_object(spec.x2),
+              int_object(spec.y2),
+            ]),
+          )
+          let font_number = doc.add_object(
+            dict([
+              (name("Type"), name_object("Font")),
+              (name("Subtype"), name_object("Type1")),
+              (name("BaseFont"), name_object("Helvetica")),
+            ]),
+          )
+          let resources = dict([
+            (name("Font"), dict([(name("Helvetica"), indirect(font_number))])),
+          ])
+          let appearance_dictionary = dict([
+            (name("Type"), name_object("XObject")),
+            (name("Subtype"), name_object("Form")),
+            (
+              name("BBox"),
+              array_object([
+                int_object(0),
+                int_object(0),
+                int_object(width),
+                int_object(height),
+              ]),
+            ),
+            (name("Resources"), resources),
+          ])
+          let content = appearance_content(spec.lines)
+          let appearance_object = @pdfsyntax.pdf_stream(
+            appearance_dictionary,
+            @pdfsyntax.PdfStreamData::StreamGot(@utf8.encode(content)),
+          )
+          let appearance_number = doc.add_object(appearance_object)
+          updated = set_entry(
+            updated,
+            name("AP"),
+            dict([(name("N"), indirect(appearance_number))]),
+          )
+        }
+        None => ()
+      }
+      doc.add_object_given_number(existing_number, updated)
+      mark_sig_flags(doc)
+    }
+    None => {
+      let rect_values = match appearance {
+        Some(spec) => [spec.x1, spec.y1, spec.x2, spec.y2]
+        None => [0, 0, 0, 0]
+      }
+      let field_entries : Array[(@pdfcore.PdfName, @pdfsyntax.PdfObject)] = [
+        (name("Type"), name_object("Annot")),
+        (name("Subtype"), name_object("Widget")),
+        (name("FT"), name_object("Sig")),
+        (name("T"), string_object(@utf8.encode(field_name))),
+        (name("V"), indirect(signature_number)),
+        (name("F"), int_object(4)),
+        (name("P"), indirect(page_number)),
         (
-          name("BBox"),
+          name("Rect"),
           array_object([
-            int_object(0),
-            int_object(0),
-            int_object(width),
-            int_object(height),
+            int_object(rect_values[0]),
+            int_object(rect_values[1]),
+            int_object(rect_values[2]),
+            int_object(rect_values[3]),
           ]),
         ),
-        (name("Resources"), resources),
-      ])
-      let content = appearance_content(spec.lines)
-      let appearance_object = @pdfsyntax.pdf_stream(
-        appearance_dictionary,
-        @pdfsyntax.PdfStreamData::StreamGot(@utf8.encode(content)),
-      )
-      let appearance_number = doc.add_object(appearance_object)
-      field_entries.push(
-        (name("AP"), dict([(name("N"), indirect(appearance_number))])),
-      )
+      ]
+      match appearance {
+        Some(spec) => {
+          let width = if spec.x2 > spec.x1 { spec.x2 - spec.x1 } else { 1 }
+          let height = if spec.y2 > spec.y1 { spec.y2 - spec.y1 } else { 1 }
+          let font_number = doc.add_object(
+            dict([
+              (name("Type"), name_object("Font")),
+              (name("Subtype"), name_object("Type1")),
+              (name("BaseFont"), name_object("Helvetica")),
+            ]),
+          )
+          let resources = dict([
+            (name("Font"), dict([(name("Helvetica"), indirect(font_number))])),
+          ])
+          let appearance_dictionary = dict([
+            (name("Type"), name_object("XObject")),
+            (name("Subtype"), name_object("Form")),
+            (
+              name("BBox"),
+              array_object([
+                int_object(0),
+                int_object(0),
+                int_object(width),
+                int_object(height),
+              ]),
+            ),
+            (name("Resources"), resources),
+          ])
+          let content = appearance_content(spec.lines)
+          let appearance_object = @pdfsyntax.pdf_stream(
+            appearance_dictionary,
+            @pdfsyntax.PdfStreamData::StreamGot(@utf8.encode(content)),
+          )
+          let appearance_number = doc.add_object(appearance_object)
+          field_entries.push(
+            (name("AP"), dict([(name("N"), indirect(appearance_number))])),
+          )
+        }
+        None => ()
+      }
+      let field = dict(field_entries)
+      let field_number = doc.add_object(field)
+      append_annotation(doc, page_number, field_number)
+      ensure_acroform(doc, field_number)
     }
-    None => ()
   }
-  let field = dict(field_entries)
-  let field_number = doc.add_object(field)
-  append_annotation(doc, page_number, field_number)
-  ensure_acroform(doc, field_number)
   if incremental.unwrap_or(false) {
     @pdflite.pdf_write_document_incremental_update_with_xref_stream(pdf, doc) catch {
       e => raise PdfSignError::PdfFailure(@pdfcore.pdf_error_summary(e))

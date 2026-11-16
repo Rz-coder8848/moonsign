@@ -541,3 +541,35 @@ test "embed a DSS without breaking the signature" {
     content="true",
   )
 }
+
+///|
+test "fill an existing empty signature field" {
+  let cert = rsa_certificate()
+  let document = @pdflite.pdf_minimum_valid_pdf() catch {
+    _ => abort("minimal pdf")
+  }
+  @pdf.add_empty_signature_field(document, "Signature1") catch {
+    e => abort(e.message())
+  }
+  let bytes = @pdflite.pdf_write_document(document) catch {
+    _ => abort("serialize")
+  }
+  let options : @pades.SignOptions = {
+    field_name: "Signature1",
+    contents_chars: 16384,
+    signing_time: Some(1794500000L),
+    reason: None,
+    location: None,
+    contact: None,
+    appearance: None,
+    pdf_password: None,
+    hash: @crypto.Hash::Sha256,
+  }
+  let signed = @pades.sign_pdf(bytes, rsa_signing_key(), cert, [], options) catch {
+    e => abort(e.message())
+  }
+  inspect(@pades.verify_pdf(signed, cert) catch { _ => false }, content="true")
+  let signatures = @pdf.signatures(signed) catch { _ => abort("signatures") }
+  inspect(signatures.length(), content="1")
+  inspect(signatures[0].field_name, content="Signature1")
+}

@@ -5,7 +5,7 @@
 作为 MoonBit 依赖：
 
 ```sh
-moon add Rz-coder8848/moonsign@0.18.0
+moon add Rz-coder8848/moonsign@0.19.0
 ```
 
 从源码运行命令行（需要 MoonBit 工具链）：
@@ -57,7 +57,7 @@ moonsign tsa-embed <signed.pdf> --response <response.der> [--anchors <tsa-ca.pem
 
 摘要默认 SHA-256；检测到 SM2 私钥时自动改用 SM3。
 
-如果输入的 PDF 已经有签名，`sign` 会自动改用增量追加，旧签名保持有效；字段名默认从 `Signature1` 往后找空位（也可用 `--field` 指定）。
+如果输入的 PDF 已经有签名，`sign` 会自动改用增量追加，旧签名保持有效；如果表单里已有**同名空白签名域**，会直接填入它，否则新建字段。字段名默认从 `Signature1` 往后找空位（也可用 `--field` 指定）。
 
 ## verify
 

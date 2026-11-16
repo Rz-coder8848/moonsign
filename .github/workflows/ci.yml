@@ -84,6 +84,13 @@ jobs:
           moon run cmd/moonsign -- info signed.pdf
           moon run cmd/moonsign -- sign blank.pdf --out signed-json.pdf --key key.pem --cert cert.pem --json
           python3 scripts/verify_pdf_signature.py signed.pdf
+      - name: Fill an existing empty signature field
+        run: |
+          moon run cmd/mkpdf -- form.pdf --with-field
+          moon run cmd/moonsign -- sign form.pdf --out form-signed.pdf \
+            --key key.pem --cert cert.pem --field Signature1
+          moon run cmd/moonsign -- info form-signed.pdf
+          moon run cmd/moonsign -- verify form-signed.pdf --cert cert.pem
       - name: Append a second signature
         run: |
           moon run cmd/moonsign -- sign blank.pdf --out first.pdf \
