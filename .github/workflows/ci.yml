@@ -111,6 +111,7 @@ jobs:
             --out dss.pdf
           moon run cmd/moonsign -- verify dss.pdf --cert testdata/certs/leaf.crt
           grep -q "/DSS" dss.pdf
+          grep -q "/VRI" dss.pdf
       - name: Verify using DSS material
         run: |
           moon run cmd/mkpdf -- dss-base.pdf

@@ -1,4 +1,5 @@
 import {
+  "Rz-coder8848/moonsign/crypto",
   "moonbitlang/pdflite",
   "moonbitlang/pdflite/core" @pdfcore,
   "moonbitlang/pdflite/syntax" @pdfsyntax,

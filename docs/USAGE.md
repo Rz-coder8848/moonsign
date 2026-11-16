@@ -5,7 +5,7 @@
 作为 MoonBit 依赖：
 
 ```sh
-moon add Rz-coder8848/moonsign@0.20.0
+moon add Rz-coder8848/moonsign@0.21.0
 ```
 
 从源码运行命令行（需要 MoonBit 工具链）：
@@ -124,7 +124,7 @@ moonsign dss signed.pdf --cert chain.pem --crl issuer.crl.pem \
   --ocsp ocsp.der --out with-dss.pdf
 ```
 
-`--cert` 可包含多张证书（PEM）；`--crl`、`--ocsp` 可选。DSS 以增量更新写入，不会让已有签名失效。
+`--cert` 可包含多张证书（PEM）；`--crl`、`--ocsp` 可选。DSS 以增量更新写入，不会让已有签名失效；同时会为每个签名写一条 VRI（验证材料索引）。
 
 ## 常见问题
 

@@ -52,6 +52,32 @@ pub fn add_dss(
   if entries.length() == 0 {
     return pdf
   }
+  let signature_list = signatures(pdf) catch { _ => [] }
+  if signature_list.length() > 0 {
+    let vri_entries : Array[(@pdfcore.PdfName, @pdfsyntax.PdfObject)] = []
+    let digits = "0123456789ABCDEF"
+    let vri_material : Array[(@pdfcore.PdfName, @pdfsyntax.PdfObject)] = []
+    if cert_refs.length() > 0 {
+      vri_material.push((name("Cert"), array_object(cert_refs)))
+    }
+    if crl_refs.length() > 0 {
+      vri_material.push((name("CRL"), array_object(crl_refs)))
+    }
+    if ocsp_refs.length() > 0 {
+      vri_material.push((name("OCSP"), array_object(ocsp_refs)))
+    }
+    for signature in signature_list {
+      let digest = @crypto.digest(@crypto.Hash::Sha1, signature.contents)
+      let buf = StringBuilder()
+      for i in 0..<digest.length() {
+        let value = digest[i].to_int()
+        buf.write_char(digits.get_char(value / 16).unwrap())
+        buf.write_char(digits.get_char(value % 16).unwrap())
+      }
+      vri_entries.push((name(buf.to_string()), dict(vri_material)))
+    }
+    entries.push((name("VRI"), dict(vri_entries)))
+  }
   let dss_number = doc.add_object(dict(entries))
   let catalog = doc.catalog() catch {
     e => raise PdfSignError::PdfFailure(@pdfcore.pdf_error_summary(e))
