@@ -96,7 +96,10 @@ jobs:
           moon run cmd/moonsign -- verify second.pdf --cert cert.pem
       - name: Embed a DSS (B-LT material)
         run: |
-          moon run cmd/moonsign -- dss chain-signed.pdf --cert chain.pem \
+          cat testdata/certs/int.crt testdata/certs/ca.crt > chain.pem
+          moon run cmd/moonsign -- sign blank.pdf --out dss-base.pdf \
+            --key testdata/certs/leaf.key --cert testdata/certs/leaf.crt --chain chain.pem
+          moon run cmd/moonsign -- dss dss-base.pdf --cert chain.pem \
             --crl testdata/certs/crl.pem --ocsp testdata/certs/ocsp-good.der \
             --out dss.pdf
           moon run cmd/moonsign -- verify dss.pdf --anchors testdata/certs/ca.crt
