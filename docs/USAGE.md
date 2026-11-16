@@ -5,7 +5,7 @@
 作为 MoonBit 依赖：
 
 ```sh
-moon add Rz-coder8848/moonsign@0.17.0
+moon add Rz-coder8848/moonsign@0.18.0
 ```
 
 从源码运行命令行（需要 MoonBit 工具链）：
@@ -114,6 +114,17 @@ moonsign verify signed.pdf --anchors root-ca.pem --ocsp ocsp-response.der
 ```
 
 会检查响应签名、有效期、证书匹配，并输出 `OCSP: good` / `OCSP: REVOKED at <时间>` / `OCSP: unknown`。被吊销时退出码为 3。
+
+## DSS（长期验证材料）
+
+把签名链、吊销信息嵌进 PDF，方便以后离线验证：
+
+```sh
+moonsign dss signed.pdf --cert chain.pem --crl issuer.crl.pem \
+  --ocsp ocsp.der --out with-dss.pdf
+```
+
+`--cert` 可包含多张证书（PEM）；`--crl`、`--ocsp` 可选。DSS 以增量更新写入，不会让已有签名失效。
 
 ## 常见问题
 

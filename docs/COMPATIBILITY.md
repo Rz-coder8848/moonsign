@@ -23,6 +23,7 @@
 | 线性化 PDF | ✅ 重写后正常 |
 | 多页 PDF | ✅ 签名放在第一页 |
 | 可见签名外观 | ✅ `--visible`（Form XObject + Helvetica） |
+| DSS / B-LT 材料 | ✅ `dss` 命令嵌入证书、CRL、OCSP（增量更新） |
 
 ## 证书链
 

@@ -22,6 +22,9 @@ fn usage() -> Unit {
   println("  moonsign verify <in.pdf> --cert <cert.pem> [--json]")
   println("  moonsign verify <in.pdf> --anchors <ca.pem> [--json]")
   println("  moonsign info <in.pdf> [--json]")
+  println(
+    "  moonsign dss <in.pdf> --cert <pem> [--crl <pem>] [--ocsp <der>] --out <out.pdf>",
+  )
   println("  moonsign tsa-request <signed.pdf> --out <request.der>")
   println(
     "  moonsign tsa-embed <signed.pdf> --response <response.der> --out <out.pdf>",
@@ -59,6 +62,7 @@ fn is_command(value : String) -> Bool {
   value == "sign" ||
   value == "verify" ||
   value == "info" ||
+  value == "dss" ||
   value == "tsa-request" ||
   value == "tsa-embed" ||
   value == "help" ||
@@ -629,6 +633,58 @@ fn info_impl(args : Array[String]) -> Unit raise CliError {
 }
 
 ///|
+fn dss_impl(args : Array[String]) -> Unit raise CliError {
+  let options = parse_options(args)
+  let input = require(options.input, "input PDF")
+  let cert_path = require(options.cert, "certificates (--cert)")
+  let out = match options.out {
+    Some(path) => path
+    None => default_output(input)
+  }
+  let pdf_bytes = read_bytes(input)
+  let cert_text = read_text(cert_path)
+  let certs = @pem.parse_certificates(cert_text) catch {
+    e => raise CliError::Failure("cannot parse certificates: " + e.message())
+  }
+  if certs.length() == 0 {
+    raise CliError::Failure("no CERTIFICATE block found in " + cert_path)
+  }
+  let cert_ders : Array[Bytes] = []
+  for cert in certs {
+    cert_ders.push(cert.der)
+  }
+  let crl_ders : Array[Bytes] = match options.crl {
+    Some(path) => {
+      let crls = read_crls(path)
+      let out : Array[Bytes] = []
+      for crl in crls {
+        out.push(crl.der)
+      }
+      out
+    }
+    None => []
+  }
+  let ocsp_ders : Array[Bytes] = match options.ocsp {
+    Some(path) => [read_bytes(path)]
+    None => []
+  }
+  let result = @pdf.add_dss(pdf_bytes, cert_ders, crl_ders, ocsp_ders) catch {
+    e => raise CliError::Failure(e.message())
+  }
+  write_bytes(out, result)
+  println(
+    "DSS added: " +
+    cert_ders.length().to_string() +
+    " certificates, " +
+    crl_ders.length().to_string() +
+    " CRLs, " +
+    ocsp_ders.length().to_string() +
+    " OCSP responses -> " +
+    out,
+  )
+}
+
+///|
 fn tsa_request_impl(args : Array[String]) -> Unit raise CliError {
   let options = parse_options(args)
   let input = require(options.input, "input PDF")
@@ -755,6 +811,8 @@ fn run(command : String, args : Array[String]) -> Unit {
       sign_impl(args)
     } else if command == "verify" {
       verify_all_impl(args)
+    } else if command == "dss" {
+      dss_impl(args)
     } else if command == "tsa-request" {
       tsa_request_impl(args)
     } else if command == "tsa-embed" {

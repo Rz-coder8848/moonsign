@@ -512,3 +512,32 @@ test "verify an OpenSSL SM2 signature with explicit ID" {
     content="true",
   )
 }
+
+///|
+test "embed a DSS without breaking the signature" {
+  let cert = rsa_certificate()
+  let options : @pades.SignOptions = {
+    field_name: "Signature1",
+    contents_chars: 16384,
+    signing_time: Some(1794500000L),
+    reason: None,
+    location: None,
+    contact: None,
+    appearance: None,
+    pdf_password: None,
+    hash: @crypto.Hash::Sha256,
+  }
+  let signed = @pades.sign_pdf(base_pdf(), rsa_signing_key(), cert, [], options) catch {
+    e => abort(e.message())
+  }
+  let with_dss = @pdf.add_dss(signed, [cert.der], [], []) catch {
+    e => abort(e.message())
+  }
+  inspect(with_dss.length() > signed.length(), content="true")
+  inspect(
+    @pades.verify_pdf(with_dss, cert) catch {
+      _ => false
+    },
+    content="true",
+  )
+}
