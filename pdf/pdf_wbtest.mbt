@@ -157,6 +157,10 @@ test "sign an encrypted PDF" {
     e => fail(e.message())
   }
   inspect(text_of_bytes(prepared).contains("/ByteRange"), content="true")
+  let reread = @pdflite.pdf_read_document_from_bytes(prepared) catch {
+    _ => fail("re-read")
+  }
+  inspect(reread.is_encrypted(), content="false")
   let failed = try {
     let _ = prepare(encrypted, "Signature1", 4096, pdf_password="bad")
     false
