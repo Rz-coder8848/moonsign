@@ -99,6 +99,12 @@ jobs:
           moon run cmd/moonsign -- sign blank.pdf --out sm2-signed.pdf \
             --key testdata/certs/sm2.key --cert testdata/certs/sm2.crt
           moon run cmd/moonsign -- verify sm2-signed.pdf --cert testdata/certs/sm2.crt
+      - name: Encrypted PDF input
+        run: |
+          moon run cmd/mkpdf -- enc.pdf --encrypt secret
+          moon run cmd/moonsign -- sign enc.pdf --out enc-signed.pdf \
+            --key key.pem --cert cert.pem --pdf-password secret
+          moon run cmd/moonsign -- verify enc-signed.pdf --cert cert.pem
       - name: Visible signature
         run: |
           moon run cmd/moonsign -- sign blank.pdf --out visible.pdf --key key.pem \

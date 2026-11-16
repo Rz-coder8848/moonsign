@@ -43,6 +43,7 @@ test "sign and verify RSA PDF" {
     location: None,
     contact: None,
     appearance: None,
+    pdf_password: None,
     hash: @crypto.Hash::Sha256,
   }
   let signed = @pades.sign_pdf(base_pdf(), rsa_signing_key(), cert, [], options) catch {
@@ -79,6 +80,7 @@ test "sign and verify ECDSA PDF" {
     location: None,
     contact: None,
     appearance: None,
+    pdf_password: None,
     hash: @crypto.Hash::Sha256,
   }
   let signed = @pades.sign_pdf(
@@ -113,6 +115,7 @@ test "tampering invalidates the signature" {
     location: None,
     contact: None,
     appearance: None,
+    pdf_password: None,
     hash: @crypto.Hash::Sha256,
   }
   let signed = @pades.sign_pdf(base_pdf(), rsa_signing_key(), cert, [], options) catch {
@@ -142,6 +145,7 @@ test "wrong certificate fails verification" {
     location: None,
     contact: None,
     appearance: None,
+    pdf_password: None,
     hash: @crypto.Hash::Sha256,
   }
   let signed = @pades.sign_pdf(base_pdf(), rsa_signing_key(), cert, [], options) catch {
@@ -189,6 +193,7 @@ test "verify with a trusted anchor" {
     location: None,
     contact: None,
     appearance: None,
+    pdf_password: None,
     hash: @crypto.Hash::Sha256,
   }
   let signed = @pades.sign_pdf(
@@ -299,6 +304,7 @@ test "sign with timestamp (B-T)" {
     location: None,
     contact: None,
     appearance: None,
+    pdf_password: None,
     hash: @crypto.Hash::Sha256,
   }
   let signed = @pades.sign_pdf_with_timestamp(
@@ -365,6 +371,7 @@ test "sign with a visible appearance" {
       y2: 120,
       lines: ["Digitally signed", "2026-11-10"],
     }),
+    pdf_password: None,
     hash: @crypto.Hash::Sha256,
   }
   let signed = @pades.sign_pdf(base_pdf(), rsa_signing_key(), cert, [], options) catch {
@@ -384,6 +391,7 @@ test "append a second signature incrementally" {
     location: None,
     contact: None,
     appearance: None,
+    pdf_password: None,
     hash: @crypto.Hash::Sha256,
   }
   let first = @pades.sign_pdf(base_pdf(), rsa_signing_key(), cert, [], options) catch {
@@ -397,6 +405,7 @@ test "append a second signature incrementally" {
     location: None,
     contact: None,
     appearance: None,
+    pdf_password: None,
     hash: @crypto.Hash::Sha256,
   }
   let second = @pades.sign_pdf(
@@ -454,6 +463,7 @@ test "sign and verify with SM2" {
     location: None,
     contact: None,
     appearance: None,
+    pdf_password: None,
     hash: @crypto.Hash::Sm3,
   }
   let signed = @pades.sign_pdf(

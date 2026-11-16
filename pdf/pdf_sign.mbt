@@ -19,6 +19,7 @@ pub(all) suberror PdfSignError {
   PlaceholderMissing
   PlaceholderTooSmall(Int32, Int32)
   OffsetTooLarge(Int32)
+  WrongPassword
 }
 
 ///|
@@ -322,15 +323,34 @@ pub fn prepare(
   signing_time? : Int64,
   appearance? : SignatureAppearance,
   incremental? : Bool,
+  pdf_password? : String,
 ) -> Bytes raise PdfSignError {
   if contents_chars < 64 || contents_chars % 2 != 0 {
     raise PdfSignError::Malformed("contents_chars must be an even number >= 64")
   }
-  let doc = @pdflite.pdf_read_document_from_bytes(pdf) catch {
+  let mut doc = @pdflite.pdf_read_document_from_bytes(pdf) catch {
     e => raise PdfSignError::PdfFailure(@pdfcore.pdf_error_summary(e))
   }
   if doc.is_encrypted() {
-    raise PdfSignError::Encrypted
+    let password = match pdf_password {
+      Some(value) => value
+      None => raise PdfSignError::Encrypted
+    }
+    if incremental.unwrap_or(false) {
+      raise PdfSignError::Malformed(
+        "appending to an encrypted PDF is not supported",
+      )
+    }
+    let decrypted = @pdflite.pdf_read_document_from_bytes_with_passwords(
+      pdf,
+      user_password=Some(@utf8.encode(password).clamped_view()),
+    ) catch {
+      e => raise PdfSignError::PdfFailure(@pdfcore.pdf_error_summary(e))
+    }
+    match decrypted {
+      Some(value) => doc = value.document
+      None => raise PdfSignError::WrongPassword
+    }
   }
   let pages = doc.page_reference_numbers() catch {
     e => raise PdfSignError::PdfFailure(@pdfcore.pdf_error_summary(e))
@@ -646,6 +666,7 @@ pub fn PdfSignError::message(self : PdfSignError) -> String {
     NoPages => "PDF has no pages"
     Malformed(detail) => "malformed PDF: \{detail}"
     PlaceholderMissing => "signature placeholder not found"
+    WrongPassword => "wrong PDF password"
     PlaceholderTooSmall(capacity, needed) =>
       "signature placeholder too small: \{capacity} hex chars available, \{needed} needed"
     OffsetTooLarge(value) => "byte offset too large: \{value}"

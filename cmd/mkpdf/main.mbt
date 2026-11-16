@@ -21,6 +21,7 @@ fn main {
   let mut path = "blank.pdf"
   let mut with_field = false
   let mut pages = 0
+  let mut encrypt : String? = None
   let mut index = 1
   while index < args.length() {
     let arg = args[index]
@@ -29,6 +30,9 @@ fn main {
       index = index + 1
     } else if arg == "--pages" && index + 1 < args.length() {
       pages = parse_pages(args[index + 1])
+      index = index + 2
+    } else if arg == "--encrypt" && index + 1 < args.length() {
+      encrypt = Some(args[index + 1])
       index = index + 2
     } else {
       match arg.get_char(0) {
@@ -51,8 +55,20 @@ fn main {
         _ => abort("failed to add the signature field")
       }
     }
-    @pdflite.pdf_write_document(document) catch {
-      _ => abort("failed to serialize the PDF")
+    match encrypt {
+      Some(password) =>
+        @pdflite.pdf_write_encrypted_128bit_document(
+          document,
+          @utf8.encode(password).clamped_view(),
+          @utf8.encode(password).clamped_view(),
+          [],
+        ) catch {
+          _ => abort("failed to encrypt the PDF")
+        }
+      None =>
+        @pdflite.pdf_write_document(document) catch {
+          _ => abort("failed to serialize the PDF")
+        }
     }
   }
   @fs.write_bytes_to_file(path, bytes) catch {

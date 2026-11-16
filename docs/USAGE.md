@@ -5,7 +5,7 @@
 作为 MoonBit 依赖：
 
 ```sh
-moon add Rz-coder8848/moonsign@0.16.0
+moon add Rz-coder8848/moonsign@0.17.0
 ```
 
 从源码运行命令行（需要 MoonBit 工具链）：
@@ -42,6 +42,7 @@ moonsign tsa-embed <signed.pdf> --response <response.der> [--anchors <tsa-ca.pem
 | `--cert <pem>` | 签名者证书（叶子证书） |
 | `--p12 <path>` | PKCS#12 文件（替代 `--key` + `--cert`） |
 | `--p12-password <text>` | PKCS#12 密码；也可用环境变量 `MOONSIGN_P12_PASSWORD` |
+| `--pdf-password <text>` | 加密 PDF 的打开密码；输出为解密后的 PDF |
 | `--visible` | 在页面上画可见签名框 |
 | `--rect x1,y1,x2,y2` | 签名框坐标（默认 `36,36,300,120`） |
 | `--appearance-text <text>` | 签名框第一行文字（默认 `Digitally signed`） |
@@ -156,6 +157,6 @@ let outcome = @pades.verify_pdf_with_anchors(signed, [root], now)
 ## 限制
 
 - 长期验证（B-LT）未实现；B-T 时间戳通过 `tsa-request` / `tsa-embed` 支持（需自备 TSA）；
-- 不支持加密 PDF；
+- 加密 PDF 可以签名，但输出会解除加密；不支持对加密 PDF 追加第二签名；
 - 不支持已有签名的 PDF 追加签名；
 - 只支持 RSA PKCS#1 v1.5、ECDSA P-256 与 SHA-256（RSA 也支持 SHA-384/512）。

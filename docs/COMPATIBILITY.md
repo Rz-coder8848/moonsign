@@ -19,7 +19,7 @@
 | 已有 AcroForm 的 PDF | ✅ 追加字段 |
 | 带已有签名的 PDF | ✅ 追加（增量更新，旧签名保持有效） |
 | 对 pyHanko 签名的 PDF 追加 | ✅ CI 验证：两个签名都能验，pyHanko 确认原签名完整 |
-| 加密 PDF | ❌ 明确拒绝 |
+| 加密 PDF | ✅ `--pdf-password` 读取并签名；输出为解密后的 PDF（暂不支持追加） |
 | 线性化 PDF | ✅ 重写后正常 |
 | 多页 PDF | ✅ 签名放在第一页 |
 | 可见签名外观 | ✅ `--visible`（Form XObject + Helvetica） |

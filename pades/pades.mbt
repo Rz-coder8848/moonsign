@@ -34,6 +34,7 @@ pub(all) struct SignOptions {
   location : String?
   contact : String?
   appearance : @pdf.SignatureAppearance?
+  pdf_password : String?
   hash : @crypto.Hash
 }
 
@@ -48,6 +49,7 @@ pub fn default_sign_options() -> SignOptions {
     location: None,
     contact: None,
     appearance: None,
+    pdf_password: None,
     hash: @crypto.Hash::Sha256,
   }
 }

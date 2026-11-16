@@ -11,7 +11,7 @@
 
 name = "Rz-coder8848/moonsign"
 
-version = "0.16.0"
+version = "0.17.0"
 
 readme = "README.md"
 

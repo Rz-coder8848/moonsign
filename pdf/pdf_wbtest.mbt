@@ -141,3 +141,27 @@ test "visible signature appearance" {
     content="true",
   )
 }
+
+///|
+test "sign an encrypted PDF" {
+  let base = @pdflite.pdf_minimum_valid_pdf() catch { _ => fail("minimal pdf") }
+  let encrypted = @pdflite.pdf_write_encrypted_128bit_document(
+    base,
+    b"user".clamped_view(),
+    b"owner".clamped_view(),
+    [],
+  ) catch {
+    _ => fail("encrypt")
+  }
+  let prepared = prepare(encrypted, "Signature1", 4096, pdf_password="user") catch {
+    e => fail(e.message())
+  }
+  inspect(text_of_bytes(prepared).contains("/ByteRange"), content="true")
+  let failed = try {
+    let _ = prepare(encrypted, "Signature1", 4096, pdf_password="bad")
+    false
+  } catch {
+    _ => true
+  }
+  inspect(failed, content="true")
+}

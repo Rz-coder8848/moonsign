@@ -2,6 +2,7 @@ import {
   "Rz-coder8848/moonsign/pdf",
   "moonbitlang/pdflite",
   "moonbitlang/core/env",
+  "moonbitlang/core/encoding/utf8",
   "moonbitlang/x/fs",
 }
 

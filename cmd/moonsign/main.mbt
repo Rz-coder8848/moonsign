@@ -88,6 +88,7 @@ pub(all) struct CliOptions {
   mut visible : Bool
   mut rect : String?
   mut appearance_text : String?
+  mut pdf_password : String?
   mut signature_index : String?
   mut json : Bool
 }
@@ -123,6 +124,7 @@ fn parse_options(args : Array[String]) -> CliOptions raise CliError {
     visible: false,
     rect: None,
     appearance_text: None,
+    pdf_password: None,
     signature_index: None,
     json: false,
   }
@@ -153,6 +155,7 @@ fn parse_options(args : Array[String]) -> CliOptions raise CliError {
       arg == "--p12-password" ||
       arg == "--rect" ||
       arg == "--appearance-text" ||
+      arg == "--pdf-password" ||
       arg == "--signature" {
       if index + 1 >= args.length() {
         raise CliError::Failure("missing value for " + arg)
@@ -192,6 +195,8 @@ fn parse_options(args : Array[String]) -> CliOptions raise CliError {
         options.rect = Some(value)
       } else if arg == "--appearance-text" {
         options.appearance_text = Some(value)
+      } else if arg == "--pdf-password" {
+        options.pdf_password = Some(value)
       } else if arg == "--signature" {
         options.signature_index = Some(value)
       } else {
@@ -487,6 +492,7 @@ fn sign_impl(args : Array[String]) -> Unit raise CliError {
     location: options.location,
     contact: options.contact,
     appearance,
+    pdf_password: options.pdf_password,
     hash,
   }
   let signed = @pades.sign_pdf(
