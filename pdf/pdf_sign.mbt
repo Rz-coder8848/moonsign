@@ -255,13 +255,13 @@ fn pdf_pad4(value : Int32) -> String {
 ///|
 /// Format a Unix timestamp as a PDF date string (`D:YYYYMMDDHHmmSSZ`).
 pub fn pdf_date_string(unix : Int64) -> String {
-  let days64 = pdf_floor_div64(unix, Int64::from_int(86400))
-  let seconds = unix - days64 * Int64::from_int(86400)
+  let days64 = pdf_floor_div64(unix, 86400L)
+  let seconds = unix - days64 * 86400L
   let days = days64.to_int()
   let (year, month, day) = pdf_civil_from_days(days)
-  let hour = (seconds / Int64::from_int(3600)).to_int()
-  let minute = (seconds % Int64::from_int(3600) / Int64::from_int(60)).to_int()
-  let second = (seconds % Int64::from_int(60)).to_int()
+  let hour = (seconds / 3600L).to_int()
+  let minute = (seconds % 3600L / 60L).to_int()
+  let second = (seconds % 60L).to_int()
   "D:" +
   pdf_pad4(year) +
   pdf_pad2(month) +

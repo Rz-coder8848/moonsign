@@ -582,7 +582,7 @@ fn parse_unix(text : String) -> Int64 raise CliError {
         if digit < 0 || digit > 9 {
           raise CliError::Failure("invalid --signing-time: " + text)
         }
-        value = value * 10L + Int64::from_int(digit)
+        value = value * 10L + digit.to_int64()
       }
       None => raise CliError::Failure("invalid --signing-time: " + text)
     }
