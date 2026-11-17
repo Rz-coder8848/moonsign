@@ -135,7 +135,8 @@ jobs:
           moon run cmd/mkpdf -- multi.pdf --pages 3
           moon run cmd/moonsign -- sign multi.pdf --out multi-signed.pdf \
             --key key.pem --cert cert.pem --visible --page 2
-          moon run cmd/moonsign -- verify multi-signed.pdf --cert cert.pem      - name: SM2 signature
+          moon run cmd/moonsign -- verify multi-signed.pdf --cert cert.pem
+      - name: SM2 signature
         run: |
           moon run cmd/moonsign -- sign blank.pdf --out sm2-signed.pdf \
             --key testdata/certs/sm2.key --cert testdata/certs/sm2.crt
