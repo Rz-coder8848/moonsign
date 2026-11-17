@@ -66,14 +66,14 @@ fn pad4(value : Int32) -> String {
 ///|
 /// Split a Unix timestamp into (year, month, day, hour, minute, second).
 fn split_unix(unix : Int64) -> (Int32, Int32, Int32, Int32, Int32, Int32) {
-  let day_seconds = Int64::from_int(86400)
+  let day_seconds = 86400L
   let days64 = floor_div64(unix, day_seconds)
   let seconds_of_day = unix - days64 * day_seconds
   let days = days64.to_int()
   let (year, month, day) = civil_from_days(days)
-  let hour = (seconds_of_day / Int64::from_int(3600)).to_int()
-  let minute = (seconds_of_day % Int64::from_int(3600) / Int64::from_int(60)).to_int()
-  let second = (seconds_of_day % Int64::from_int(60)).to_int()
+  let hour = (seconds_of_day / 3600L).to_int()
+  let minute = (seconds_of_day % 3600L / 60L).to_int()
+  let second = (seconds_of_day % 60L).to_int()
   (year, month, day, hour, minute, second)
 }
 
@@ -108,7 +108,7 @@ pub fn der_generalized_time(unix : Int64) -> Bytes {
 
 ///|
 /// Encode a time, choosing UTCTime for 1950..2049 and GeneralizedTime outside
-/// that range (RFC 5280 搂4.1.2.5).
+/// that range (RFC 5280 鎼?.1.2.5).
 pub fn der_time_auto(unix : Int64) -> Bytes {
   let (year, _, _, _, _, _) = split_unix(unix)
   if year >= 1950 && year <= 2049 {
@@ -187,5 +187,5 @@ pub fn der_time_parse(tlv : Tlv) -> Int64 raise DerError {
   }
   let days = days_from_civil(year, month, day)
   let seconds = days * 86400 + hour * 3600 + minute * 60 + second
-  Int64::from_int(seconds)
+  seconds.to_int64()
 }
