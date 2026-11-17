@@ -93,6 +93,7 @@ pub(all) struct CliOptions {
   mut rect : String?
   mut appearance_text : String?
   mut pdf_password : String?
+  mut page : String?
   mut signature_index : String?
   mut json : Bool
 }
@@ -129,6 +130,7 @@ fn parse_options(args : Array[String]) -> CliOptions raise CliError {
     rect: None,
     appearance_text: None,
     pdf_password: None,
+    page: None,
     signature_index: None,
     json: false,
   }
@@ -160,6 +162,7 @@ fn parse_options(args : Array[String]) -> CliOptions raise CliError {
       arg == "--rect" ||
       arg == "--appearance-text" ||
       arg == "--pdf-password" ||
+      arg == "--page" ||
       arg == "--signature" {
       if index + 1 >= args.length() {
         raise CliError::Failure("missing value for " + arg)
@@ -201,6 +204,8 @@ fn parse_options(args : Array[String]) -> CliOptions raise CliError {
         options.appearance_text = Some(value)
       } else if arg == "--pdf-password" {
         options.pdf_password = Some(value)
+      } else if arg == "--page" {
+        options.page = Some(value)
       } else if arg == "--signature" {
         options.signature_index = Some(value)
       } else {
@@ -488,6 +493,16 @@ fn sign_impl(args : Array[String]) -> Unit raise CliError {
     @pades.SigningKey::Sm2(_) => @crypto.Hash::Sm3
     _ => @crypto.Hash::Sha256
   }
+  let page_index : Int32? = match options.page {
+    Some(text) => {
+      let selected = parse_unix(text).to_int()
+      if selected < 1 {
+        raise CliError::Failure("--page starts at 1")
+      }
+      Some(selected - 1)
+    }
+    None => None
+  }
   let sign_options : @pades.SignOptions = {
     field_name,
     contents_chars: 16384,
@@ -497,6 +512,7 @@ fn sign_impl(args : Array[String]) -> Unit raise CliError {
     contact: options.contact,
     appearance,
     pdf_password: options.pdf_password,
+    page: page_index,
     hash,
   }
   let signed = @pades.sign_pdf(

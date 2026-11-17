@@ -5,7 +5,7 @@
 作为 MoonBit 依赖：
 
 ```sh
-moon add Rz-coder8848/moonsign@0.21.0
+moon add Rz-coder8848/moonsign@0.22.0
 ```
 
 从源码运行命令行（需要 MoonBit 工具链）：
@@ -46,6 +46,7 @@ moonsign tsa-embed <signed.pdf> --response <response.der> [--anchors <tsa-ca.pem
 | `--visible` | 在页面上画可见签名框 |
 | `--rect x1,y1,x2,y2` | 签名框坐标（默认 `36,36,300,120`） |
 | `--appearance-text <text>` | 签名框第一行文字（默认 `Digitally signed`） |
+| `--page <n>` | 可见签名放在第几页（从 1 开始，默认第 1 页） |
 | `--out <pdf>` | 输出文件，默认 `<输入>.signed.pdf` |
 | `--chain <pem>` | 额外证书（中间证书），可包含多张 |
 | `--field <name>` | 签名字段名，默认 `Signature1` |

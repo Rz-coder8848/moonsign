@@ -400,6 +400,7 @@ pub fn prepare(
   appearance? : SignatureAppearance,
   incremental? : Bool,
   pdf_password? : String,
+  page_index? : Int32,
 ) -> Bytes raise PdfSignError {
   if contents_chars < 64 || contents_chars % 2 != 0 {
     raise PdfSignError::Malformed("contents_chars must be an even number >= 64")
@@ -434,7 +435,14 @@ pub fn prepare(
   if pages.length() == 0 {
     raise PdfSignError::NoPages
   }
-  let page_number = pages[0]
+  let selected_page = match page_index {
+    Some(value) => value
+    None => 0
+  }
+  if selected_page < 0 || selected_page >= pages.length() {
+    raise PdfSignError::Malformed("page number is out of range")
+  }
+  let page_number = pages[selected_page]
   let placeholder = Array::make(contents_chars, b'0')
   let entries : Array[(@pdfcore.PdfName, @pdfsyntax.PdfObject)] = [
     (name("Type"), name_object("Sig")),

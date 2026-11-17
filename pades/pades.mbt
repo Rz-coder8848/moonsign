@@ -35,6 +35,7 @@ pub(all) struct SignOptions {
   contact : String?
   appearance : @pdf.SignatureAppearance?
   pdf_password : String?
+  page : Int32?
   hash : @crypto.Hash
 }
 
@@ -50,6 +51,7 @@ pub fn default_sign_options() -> SignOptions {
     contact: None,
     appearance: None,
     pdf_password: None,
+    page: None,
     hash: @crypto.Hash::Sha256,
   }
 }
@@ -94,6 +96,7 @@ pub fn sign_pdf(
     signing_time?=options.signing_time,
     appearance?=options.appearance,
     pdf_password?=options.pdf_password,
+    page_index?=options.page,
     incremental=@pdf.find_signatures(pdf_bytes).length() > 0,
   ) catch {
     e => raise PadesError::Pdf(e)
@@ -332,6 +335,7 @@ pub fn sign_pdf_with_timestamp(
     signing_time?=options.signing_time,
     appearance?=options.appearance,
     pdf_password?=options.pdf_password,
+    page_index?=options.page,
     incremental=@pdf.find_signatures(pdf_bytes).length() > 0,
   ) catch {
     e => raise PadesError::Pdf(e)

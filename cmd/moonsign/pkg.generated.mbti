@@ -31,6 +31,7 @@ pub(all) struct CliOptions {
   mut rect : String?
   mut appearance_text : String?
   mut pdf_password : String?
+  mut page : String?
   mut signature_index : String?
   mut json : Bool
 }

@@ -52,6 +52,7 @@ pub(all) struct SignOptions {
   contact : String?
   appearance : @pdf.SignatureAppearance?
   pdf_password : String?
+  page : Int32?
   hash : @crypto.Hash
 }
 

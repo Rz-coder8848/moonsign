@@ -27,6 +27,7 @@ fn main {
     contact: None,
     appearance: None,
     pdf_password: None,
+    page: None,
     hash: @crypto.Hash::Sha256,
   }
   println("pages,bytes,sign_ms,verify_ms")
