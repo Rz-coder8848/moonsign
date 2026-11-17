@@ -16,7 +16,7 @@ test "parse a good OCSP response" {
   }
   inspect(response.status, content="0")
   inspect(response.responses.length(), content="1")
-  match @ocsp.check(response, leaf, intermediate, 1794500000L) {
+  match @ocsp.check(response, leaf, intermediate, 1800000000L) {
     @ocsp.CertStatus::Good => ()
     _ => fail("expected a good status")
   }
@@ -31,7 +31,7 @@ test "parse a revoked OCSP response" {
   ) catch {
     e => fail(e.message())
   }
-  match @ocsp.check(response, leaf, intermediate, 1794500000L) {
+  match @ocsp.check(response, leaf, intermediate, 1800000000L) {
     @ocsp.CertStatus::Revoked(_) => ()
     _ => fail("expected a revoked status")
   }
@@ -47,7 +47,7 @@ test "OCSP response for another certificate is rejected" {
     e => fail(e.message())
   }
   let failed = try {
-    let _ = @ocsp.check(response, other, intermediate, 1794500000L)
+    let _ = @ocsp.check(response, other, intermediate, 1800000000L)
     false
   } catch {
     _ => true
