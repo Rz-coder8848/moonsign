@@ -618,3 +618,69 @@ test "place a visible signature on page 2" {
   }
   inspect(@pades.verify_pdf(signed, cert) catch { _ => false }, content="true")
 }
+
+///|
+test "sign and append on a rich multi-page PDF" {
+  let cert = rsa_certificate()
+  let options : @pades.SignOptions = {
+    field_name: "Signature1",
+    contents_chars: 16384,
+    signing_time: Some(1794500000L),
+    reason: None,
+    location: None,
+    contact: None,
+    appearance: Some({
+      x1: 36,
+      y1: 36,
+      x2: 300,
+      y2: 120,
+      lines: ["Digitally signed"],
+    }),
+    pdf_password: None,
+    page: Some(1),
+    hash: @crypto.Hash::Sha256,
+  }
+  let first = @pades.sign_pdf(
+    @pdf.rich_pdf(3),
+    rsa_signing_key(),
+    cert,
+    [],
+    options,
+  ) catch {
+    e => abort(e.message())
+  }
+  inspect(@pades.verify_pdf(first, cert) catch { _ => false }, content="true")
+  let second_options : @pades.SignOptions = {
+    field_name: "Signature2",
+    contents_chars: 16384,
+    signing_time: Some(1794500100L),
+    reason: None,
+    location: None,
+    contact: None,
+    appearance: None,
+    pdf_password: None,
+    page: None,
+    hash: @crypto.Hash::Sha256,
+  }
+  let second = @pades.sign_pdf(
+    first,
+    rsa_signing_key(),
+    cert,
+    [],
+    second_options,
+  ) catch {
+    e => abort(e.message())
+  }
+  inspect(
+    @pades.verify_pdf_at(second, 0, cert) catch {
+      _ => false
+    },
+    content="true",
+  )
+  inspect(
+    @pades.verify_pdf_at(second, 1, cert) catch {
+      _ => false
+    },
+    content="true",
+  )
+}

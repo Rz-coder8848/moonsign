@@ -137,6 +137,15 @@ jobs:
           moon run cmd/moonsign -- sign multi.pdf --out multi-signed.pdf \
             --key key.pem --cert cert.pem --visible --page 2
           moon run cmd/moonsign -- verify multi-signed.pdf --cert cert.pem
+      - name: Rich multi-page PDF
+        run: |
+          moon run cmd/mkpdf -- rich.pdf --rich
+          moon run cmd/moonsign -- sign rich.pdf --out rich-signed.pdf \
+            --key key.pem --cert cert.pem --visible --page 2
+          moon run cmd/moonsign -- sign rich-signed.pdf --out rich-twice.pdf \
+            --key key.pem --cert cert.pem
+          moon run cmd/moonsign -- verify rich-twice.pdf --cert cert.pem
+          grep -q "/URI" rich-twice.pdf
       - name: SM2 signature
         run: |
           moon run cmd/moonsign -- sign blank.pdf --out sm2-signed.pdf \

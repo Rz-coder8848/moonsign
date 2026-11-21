@@ -28,6 +28,8 @@ pub fn prepare(Bytes, String, Int32, reason? : String, location? : String, conta
 
 pub fn replace_contents(Bytes, Bytes) -> Bytes raise PdfSignError
 
+pub fn rich_pdf(Int32) -> Bytes
+
 pub fn seal_layout(Bytes, Int32) -> (Bytes, SignatureSlot) raise PdfSignError
 
 pub fn signatures(Bytes) -> Array[PdfSignature] raise PdfSignError

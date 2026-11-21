@@ -22,11 +22,15 @@ fn main {
   let mut with_field = false
   let mut pages = 0
   let mut encrypt : String? = None
+  let mut rich = false
   let mut index = 1
   while index < args.length() {
     let arg = args[index]
     if arg == "--with-field" {
       with_field = true
+      index = index + 1
+    } else if arg == "--rich" {
+      rich = true
       index = index + 1
     } else if arg == "--pages" && index + 1 < args.length() {
       pages = parse_pages(args[index + 1])
@@ -42,7 +46,9 @@ fn main {
       index = index + 1
     }
   }
-  let bytes = if pages > 0 {
+  let bytes = if rich {
+    @pdf.rich_pdf(if pages > 0 { pages } else { 3 })
+  } else if pages > 0 {
     @pdf.paged_pdf(pages)
   } else {
     let document = @pdflite.pdf_minimum_valid_pdf() catch {
