@@ -169,3 +169,20 @@ test "sign an encrypted PDF" {
   }
   inspect(failed, content="true")
 }
+
+///|
+test "the first signature is appended without rewriting the original" {
+  let base = @pdflite.pdf_minimum_valid_pdf() catch { _ => fail("minimal pdf") }
+  let bytes = @pdflite.pdf_write_document(base) catch { _ => fail("serialize") }
+  let prepared = prepare(bytes, "Signature1", 4096) catch {
+    e => fail(e.message())
+  }
+  inspect(prepared.length() > bytes.length(), content="true")
+  let mut same = true
+  for i in 0..<bytes.length() {
+    if prepared[i] != bytes[i] {
+      same = false
+    }
+  }
+  inspect(same, content="true")
+}

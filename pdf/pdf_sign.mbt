@@ -401,6 +401,7 @@ pub fn prepare(
   incremental? : Bool,
   pdf_password? : String,
   page_index? : Int32,
+  full_rewrite? : Bool,
 ) -> Bytes raise PdfSignError {
   if contents_chars < 64 || contents_chars % 2 != 0 {
     raise PdfSignError::Malformed("contents_chars must be an even number >= 64")
@@ -408,6 +409,7 @@ pub fn prepare(
   let mut doc = @pdflite.pdf_read_document_from_bytes(pdf) catch {
     e => raise PdfSignError::PdfFailure(@pdfcore.pdf_error_summary(e))
   }
+  let mut decrypted_input = false
   if doc.is_encrypted() {
     let password = match pdf_password {
       Some(value) => value
@@ -425,7 +427,10 @@ pub fn prepare(
       e => raise PdfSignError::PdfFailure(@pdfcore.pdf_error_summary(e))
     }
     match decrypted {
-      Some(value) => doc = value.document
+      Some(value) => {
+        doc = value.document
+        decrypted_input = true
+      }
       None => raise PdfSignError::WrongPassword
     }
   }
@@ -615,14 +620,21 @@ pub fn prepare(
       ensure_acroform(doc, field_number)
     }
   }
-  if incremental.unwrap_or(false) {
-    @pdflite.pdf_write_document_incremental_update_with_xref_stream(pdf, doc) catch {
-      e => raise PdfSignError::PdfFailure(@pdfcore.pdf_error_summary(e))
+  let force_full = full_rewrite.unwrap_or(false) || decrypted_input
+  let mut written : Bytes? = None
+  if !force_full {
+    written = Some(
+      @pdflite.pdf_write_document_incremental_update_with_xref_stream(pdf, doc),
+    ) catch {
+      _ => None
     }
-  } else {
-    @pdflite.pdf_write_document(doc) catch {
-      e => raise PdfSignError::PdfFailure(@pdfcore.pdf_error_summary(e))
-    }
+  }
+  match written {
+    Some(bytes) => bytes
+    None =>
+      @pdflite.pdf_write_document(doc) catch {
+        e => raise PdfSignError::PdfFailure(@pdfcore.pdf_error_summary(e))
+      }
   }
 }
 
