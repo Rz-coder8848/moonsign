@@ -18,23 +18,23 @@ moon run --release cmd/bench
 
 ## 参考数据
 
-GitHub Actions `ubuntu-latest`（native，2026-11-10）：
+GitHub Actions `ubuntu-latest`（native，2026-11-21）：
 
 | 页数 | PDF 大小 | 签名 | 验签 |
 | --- | --- | --- | --- |
-| 1 | 17 KB | 7 ms | 0 ms |
-| 500 | 66 KB | 10 ms | 1 ms |
-| 2,000 | 216 KB | 16 ms | 4 ms |
-| 5,000 | 517 KB | 29 ms | 11 ms |
-| 10,000 | 1.0 MB | 52 ms | 22 ms |
+| 1 | 17 KB | 10 ms | 1 ms |
+| 500 | 66 KB | 11 ms | 2 ms |
+| 2,000 | 216 KB | 16 ms | 6 ms |
+| 5,000 | 517 KB | 27 ms | 15 ms |
+| 10,000 | 1.0 MB | 48 ms | 31 ms |
 
 同一份数据在 wasm-gc（本机）上：
 
 | 页数 | 签名 | 验签 |
 | --- | --- | --- |
-| 1 | 40 ms | 3 ms |
-| 2,000 | 62 ms | 17 ms |
-| 10,000 | 131 ms | 68 ms |
+| 1 | 38 ms | 3 ms |
+| 2,000 | 53 ms | 13 ms |
+| 10,000 | 102 ms | 46 ms |
 
 ## 结论
 
