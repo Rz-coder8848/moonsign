@@ -3,6 +3,8 @@ struct VerifyReport {
   index : Int32
   field : String
   subfilter : String
+  signer_name : String?
+  signing_time : Int64?
   valid : Bool
   trusted : Bool?
   chain_length : Int32?
@@ -34,6 +36,22 @@ fn parse_dss_crls(items : Array[Bytes]) -> Array[@x509.Crl] {
 }
 
 ///|
+fn signature_metadata(contents : Bytes) -> (String?, Int64?) {
+  let signed_data = @cms.parse_signed_data(contents) catch {
+    _ => return (None, None)
+  }
+  if signed_data.signer_infos.length() == 0 {
+    return (None, None)
+  }
+  let signer_info = signed_data.signer_infos[0]
+  let name = match @cms.signer_certificate(signed_data, signer_info) {
+    Some(certificate) => certificate.common_name()
+    None => None
+  }
+  (name, @cms.signing_time(signer_info))
+}
+
+///|
 fn verify_one(
   pdf_bytes : Bytes,
   index : Int32,
@@ -48,6 +66,7 @@ fn verify_one(
   now : Int64,
 ) -> VerifyReport raise CliError {
   let signature = signatures[index]
+  let (signer_name, signing_time) = signature_metadata(signature.contents)
   let mut valid = false
   let mut trusted : Bool? = None
   let mut chain_length : Int32? = None
@@ -161,6 +180,8 @@ fn verify_one(
     index,
     field: signature.field_name,
     subfilter: signature.subfilter,
+    signer_name,
+    signing_time,
     valid,
     trusted,
     chain_length,
@@ -176,6 +197,14 @@ fn verify_one(
 fn print_verify_report(report : VerifyReport) -> Unit {
   println("Signature " + (report.index + 1).to_string() + ": " + report.field)
   println("  subfilter: " + report.subfilter)
+  match report.signer_name {
+    Some(name) => println("  signer: " + name)
+    None => ()
+  }
+  match report.signing_time {
+    Some(value) => println("  signed at: " + @pdf.pdf_date_string(value))
+    None => ()
+  }
   if !report.valid {
     println("Result: INVALID")
     println("  The document changed, or the signature does not verify.")
@@ -350,7 +379,23 @@ fn verify_all_impl(args : Array[String]) -> Unit raise CliError {
       buf.write_string((report.index + 1).to_string())
       buf.write_string(",\"field\":\"")
       buf.write_string(json_escape(report.field))
-      buf.write_string("\",\"valid\":")
+      buf.write_string("\"")
+      match report.signer_name {
+        Some(name) => {
+          buf.write_string(",\"signer\":\"")
+          buf.write_string(json_escape(name))
+          buf.write_string("\"")
+        }
+        None => ()
+      }
+      match report.signing_time {
+        Some(value) => {
+          buf.write_string(",\"signing_time\":")
+          buf.write_string(value.to_string())
+        }
+        None => ()
+      }
+      buf.write_string(",\"valid\":")
       buf.write_string(if report.valid { "true" } else { "false" })
       match report.trusted {
         Some(value) => {

@@ -80,7 +80,8 @@ jobs:
       - name: Sign, verify and inspect
         run: |
           moon run cmd/moonsign -- sign blank.pdf --out signed.pdf --key key.pem --cert cert.pem
-          moon run cmd/moonsign -- verify signed.pdf --cert cert.pem
+          moon run cmd/moonsign -- verify signed.pdf --cert cert.pem | tee verify.txt
+          grep -q "signer:" verify.txt
           moon run cmd/moonsign -- info signed.pdf
           moon run cmd/moonsign -- sign blank.pdf --out signed-json.pdf --key key.pem --cert cert.pem --json
           python3 scripts/verify_pdf_signature.py signed.pdf
