@@ -2,7 +2,7 @@
 
 ## 未发布
 
-- erify 输出签名者姓名（证书 CN）和签名时间；JSON 增加 signer、signing_time 字段；
+- `verify` 输出签名者姓名（证书 CN）和签名时间；JSON 增加 `signer`、`signing_time` 字段；
 
 ## 0.22.0（2026-11-17）
 
