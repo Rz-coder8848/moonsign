@@ -46,7 +46,7 @@ fn main {
       index = index + 1
     }
   }
-  let bytes = if rich {
+  let base_bytes = if rich {
     @pdf.rich_pdf(if pages > 0 { pages } else { 3 })
   } else if pages > 0 {
     @pdf.paged_pdf(pages)
@@ -55,27 +55,29 @@ fn main {
       _ => abort("failed to create a minimal PDF")
     }
     if with_field {
-      // Add an empty signature field so other tools (for example pyHanko) can
-      // fill it.
       @pdf.add_empty_signature_field(document, "Signature1") catch {
         _ => abort("failed to add the signature field")
       }
     }
-    match encrypt {
-      Some(password) =>
-        @pdflite.pdf_write_encrypted_128bit_document(
-          document,
-          @utf8.encode(password).clamped_view(),
-          @utf8.encode(password).clamped_view(),
-          [],
-        ) catch {
-          _ => abort("failed to encrypt the PDF")
-        }
-      None =>
-        @pdflite.pdf_write_document(document) catch {
-          _ => abort("failed to serialize the PDF")
-        }
+    @pdflite.pdf_write_document(document) catch {
+      _ => abort("failed to serialize the PDF")
     }
+  }
+  let bytes = match encrypt {
+    Some(password) => {
+      let document = @pdflite.pdf_read_document_from_bytes(base_bytes) catch {
+        _ => abort("failed to read the generated PDF")
+      }
+      @pdflite.pdf_write_encrypted_128bit_document(
+        document,
+        @utf8.encode(password).clamped_view(),
+        @utf8.encode(password).clamped_view(),
+        [],
+      ) catch {
+        _ => abort("failed to encrypt the PDF")
+      }
+    }
+    None => base_bytes
   }
   @fs.write_bytes_to_file(path, bytes) catch {
     _ => abort("failed to write " + path)

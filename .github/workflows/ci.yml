@@ -146,6 +146,25 @@ jobs:
             --key key.pem --cert cert.pem
           moon run cmd/moonsign -- verify rich-twice.pdf --cert cert.pem
           grep -q "/URI" rich-twice.pdf
+      - name: Encrypted rich PDF with second signature
+        run: |
+          moon run cmd/mkpdf -- enc-rich.pdf --rich --pages 3 --encrypt secret
+          set +e
+          moon run cmd/moonsign -- sign enc-rich.pdf --out bad.pdf \
+            --key key.pem --cert cert.pem --pdf-password wrong
+          code=$?
+          set -e
+          if [ "$code" -ne 1 ]; then
+            echo "expected exit 1 for a wrong PDF password, got $code"
+            exit 1
+          fi
+          moon run cmd/moonsign -- sign enc-rich.pdf --out enc-rich-signed.pdf \
+            --key key.pem --cert cert.pem --pdf-password secret --visible --page 2
+          moon run cmd/moonsign -- verify enc-rich-signed.pdf --cert cert.pem
+          moon run cmd/moonsign -- sign enc-rich-signed.pdf --out enc-rich-twice.pdf \
+            --key key.pem --cert cert.pem
+          moon run cmd/moonsign -- verify enc-rich-twice.pdf --cert cert.pem
+          grep -q "/URI" enc-rich-twice.pdf
       - name: SM2 signature
         run: |
           moon run cmd/moonsign -- sign blank.pdf --out sm2-signed.pdf \
