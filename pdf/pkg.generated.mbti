@@ -18,6 +18,10 @@ pub fn embed(Bytes, SignatureSlot, Bytes) -> Bytes raise PdfSignError
 
 pub fn find_signatures(Bytes) -> Array[PdfSignature]
 
+pub fn has_dss_marker(Bytes) -> Bool
+
+pub fn has_signature_marker(Bytes) -> Bool
+
 pub fn locate(Bytes, Int32) -> SignatureSlot raise PdfSignError
 
 pub fn paged_pdf(Int32) -> Bytes

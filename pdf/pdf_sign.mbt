@@ -923,3 +923,21 @@ pub fn replace_contents(
   }
   Bytes::from_array(out[:])
 }
+
+///|
+/// Cheap byte-level check for an existing signature marker.
+pub fn has_signature_marker(pdf : Bytes) -> Bool {
+  match find_bytes(pdf, b"/ByteRange", 0) {
+    Some(_) => true
+    None => false
+  }
+}
+
+///|
+/// Cheap byte-level check for a DSS marker.
+pub fn has_dss_marker(pdf : Bytes) -> Bool {
+  match find_bytes(pdf, b"/DSS", 0) {
+    Some(_) => true
+    None => false
+  }
+}

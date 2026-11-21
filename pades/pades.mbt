@@ -97,7 +97,7 @@ pub fn sign_pdf(
     appearance?=options.appearance,
     pdf_password?=options.pdf_password,
     page_index?=options.page,
-    incremental=@pdf.find_signatures(pdf_bytes).length() > 0,
+    incremental=@pdf.has_signature_marker(pdf_bytes),
   ) catch {
     e => raise PadesError::Pdf(e)
   }
@@ -336,7 +336,7 @@ pub fn sign_pdf_with_timestamp(
     appearance?=options.appearance,
     pdf_password?=options.pdf_password,
     page_index?=options.page,
-    incremental=@pdf.find_signatures(pdf_bytes).length() > 0,
+    incremental=@pdf.has_signature_marker(pdf_bytes),
   ) catch {
     e => raise PadesError::Pdf(e)
   }
