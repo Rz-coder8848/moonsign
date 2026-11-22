@@ -256,6 +256,8 @@ jobs:
           grep -q "timestamp: VALID and TRUSTED" verify.txt
       - name: Run the example
         run: bash examples/sign-and-verify/run.sh
+      - name: Run the full demo
+        run: bash examples/full-demo/run.sh
 
   bench:
     name: benchmark (native)

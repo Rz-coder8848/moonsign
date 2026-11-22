@@ -228,20 +228,21 @@ cmd/      命令行程序
 ## 现在明确不做
 
 - 不做 PDF 渲染/排版；
-- 不做证书颁发、时间戳服务、信任列表（这些是另一套系统）；
-- 暂不支持加密 PDF；
-- 暂不支持给"已经有签名"的 PDF 追加第二个签名（路线图里有）；
-- 0.1 版本没有经过安全审计。
+- 不做证书颁发、时间戳服务运营、信任列表（这些是另一套系统）；
+- 加密 PDF 可以签名，但输出会解除加密；不支持在加密 PDF 上追加签名；
+- 复杂第三方 PDF 的追加兼容性仍在持续测试；
+- 尚未经过独立安全审计。
 
 ## 怎么验证它真的能用
 
-- 仓库里的 30 多个测试覆盖：编码、证书解析、CMS 构造/验签、PDF 签名、篡改检测；
+- 仓库里的 70 多个测试覆盖：编码、证书解析、证书链、CRL/OCSP、PKCS#12、SM2、CMS、PDF 签名、增量追加、加密 PDF、DSS、篡改检测；
 - CI 在 Linux / macOS / Windows 上跑测试；
-- CI 还会把 MoonSign 生成的 CMS 和 PDF 交给 OpenSSL 验签，确保不是"自己验自己"。
+- CI 还会把 MoonSign 生成的 CMS 和 PDF 交给 OpenSSL 和 pyHanko 验证，确保不是"自己验自己"。
 
 ## 更多文档
 
 - [使用手册](docs/USAGE.md)（全部命令与参数）
+- [完整示例](examples/full-demo/README.md)（签名、追加、验签、DSS）
 - [性能基准](docs/PERFORMANCE.md)
 - [更新日志](CHANGELOG.md)
 - [关键技术决策](docs/DECISIONS.md)

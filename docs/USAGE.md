@@ -141,9 +141,9 @@ moonsign dss signed.pdf --cert chain.pem --crl issuer.crl.pem \
 
 用 `--crl` 给出签发机构发布的 CRL。被吊销时会输出 `VALID but NOT TRUSTED`，原因写 `certificate has been revoked`。
 
-**为什么不能给已有签名的 PDF 再加一个签名？**
+**怎么给已有签名的 PDF 再加一个签名？**
 
-0.x 采用"整篇重写"的方式规避 PDF 增量更新的兼容问题，所以已有签名会失效。这一点会在后续版本解决。
+直接对已签名的 PDF 再运行一次 `sign`。程序会自动改用增量追加，旧字节不变，所以旧签名仍然有效；字段名会自动避开已存在的名字。验证时默认会逐个检查所有签名，也可以用 `--signature n` 只看其中一个。
 
 ## 在代码里使用
 
