@@ -1,5 +1,8 @@
 # MoonSign
 
+[![CI](https://github.com/Rz-coder8848/moonsign/actions/workflows/ci.yml/badge.svg)](https://github.com/Rz-coder8848/moonsign/actions/workflows/ci.yml)
+[![License: Apache-2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
+
 用纯 MoonBit 写的 PDF 数字签名工具：**给 PDF 签名，并验证它有没有被改过。**
 
 > 当前版本 0.23.1，功能可用但还不适合直接用于有法律效力的正式签署。
@@ -30,7 +33,7 @@
 | 证书链 | `--anchors` 指定信任根，检查签名者证书能否链到它 |
 | 吊销检查 | `--crl` 指定 CRL（PEM），拒绝已被吊销的证书 |
 | OCSP | `--ocsp` 指定 OCSP 响应（DER），检查在线吊销状态 |
-| 命令行 | `sign` / `verify` / `info` |
+| 命令行 | `sign` / `verify` / `info` / `dss` / `tsa-request` / `tsa-embed` |
 | 可见签名 | `--visible` 在页面上画签名框（含文字与日期），`--page` 选页码 |
 | 追加签名 | 对已签名 PDF 再签一次（增量更新，旧签名不失效） |
 | 加密 PDF | `--pdf-password` 读取并签名（输出为解密后的 PDF） |
