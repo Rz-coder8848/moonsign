@@ -5,7 +5,7 @@
 作为 MoonBit 依赖：
 
 ```sh
-moon add Rz-coder8848/moonsign@0.23.1
+moon add Rz-coder8848/moonsign@0.23.2
 ```
 
 从源码运行命令行（需要 MoonBit 工具链）：
