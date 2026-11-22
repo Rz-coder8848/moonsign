@@ -246,6 +246,7 @@ cmd/      命令行程序
 
 - [使用手册](docs/USAGE.md)（全部命令与参数）
 - [开发历程](docs/DEVLOG.md)（过程、踩坑、取舍）
+- [验收演示](demo/README.md)（一键跑完 9 项检查）
 - [完整示例](examples/full-demo/README.md)（签名、追加、验签、DSS）
 - [性能基准](docs/PERFORMANCE.md)
 - [更新日志](CHANGELOG.md)

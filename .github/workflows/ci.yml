@@ -258,6 +258,8 @@ jobs:
         run: bash examples/sign-and-verify/run.sh
       - name: Run the full demo
         run: bash examples/full-demo/run.sh
+      - name: Run the acceptance demo
+        run: bash demo/acceptance.sh
 
   bench:
     name: benchmark (native)
