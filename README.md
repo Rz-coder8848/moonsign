@@ -245,6 +245,7 @@ cmd/      命令行程序
 ## 更多文档
 
 - [使用手册](docs/USAGE.md)（全部命令与参数）
+- [开发历程](docs/DEVLOG.md)（过程、踩坑、取舍）
 - [完整示例](examples/full-demo/README.md)（签名、追加、验签、DSS）
 - [性能基准](docs/PERFORMANCE.md)
 - [更新日志](CHANGELOG.md)
