@@ -299,9 +299,22 @@ fn pdf_escape(text : String) -> String {
 }
 
 ///|
-fn appearance_content(lines : Array[String]) -> String {
+fn appearance_content(
+  lines : Array[String],
+  width : Int32,
+  height : Int32,
+) -> String {
+  let top = if height > 14 { height - 12 } else { 2 }
   let buf = StringBuilder()
-  buf.write_string("BT /Helvetica 9 Tf 4 4 Td ")
+  buf.write_string(
+    "0.75 w 0 0 " +
+    width.to_string() +
+    " " +
+    height.to_string() +
+    " re S BT /Helvetica 9 Tf 4 " +
+    top.to_string() +
+    " Td ",
+  )
   for i in 0..<lines.length() {
     if i > 0 {
       buf.write_string("0 -12 Td ")
@@ -534,7 +547,7 @@ pub fn prepare(
             ),
             (name("Resources"), resources),
           ])
-          let content = appearance_content(spec.lines)
+          let content = appearance_content(spec.lines, width, height)
           let appearance_object = @pdfsyntax.pdf_stream(
             appearance_dictionary,
             @pdfsyntax.PdfStreamData::StreamGot(@utf8.encode(content)),
@@ -602,7 +615,7 @@ pub fn prepare(
             ),
             (name("Resources"), resources),
           ])
-          let content = appearance_content(spec.lines)
+          let content = appearance_content(spec.lines, width, height)
           let appearance_object = @pdfsyntax.pdf_stream(
             appearance_dictionary,
             @pdfsyntax.PdfStreamData::StreamGot(@utf8.encode(content)),
@@ -940,4 +953,25 @@ pub fn has_dss_marker(pdf : Bytes) -> Bool {
     Some(_) => true
     None => false
   }
+}
+
+///|
+/// Format a Unix timestamp as `YYYY-MM-DD HH:MM:SSZ` for display.
+pub fn readable_date(unix : Int64) -> String {
+  let raw = pdf_date_string(unix)
+  if raw.length() < 16 {
+    return raw
+  }
+  raw[2:6].to_owned() +
+  "-" +
+  raw[6:8].to_owned() +
+  "-" +
+  raw[8:10].to_owned() +
+  " " +
+  raw[10:12].to_owned() +
+  ":" +
+  raw[12:14].to_owned() +
+  ":" +
+  raw[14:16].to_owned() +
+  "Z"
 }

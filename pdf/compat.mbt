@@ -72,7 +72,7 @@ pub fn rich_pdf(pages : Int32) -> Bytes {
     parts.push(stream)
     total = total + stream.length()
     let annotation = annotation_number.to_string() +
-      " 0 obj\n<< /Type /Annot /Subtype /Link /Rect [72 650 300 680] /A << /S /URI /URI (https://example.com/page" +
+      " 0 obj\n<< /Type /Annot /Subtype /Link /Rect [72 650 300 680] /Border [0 0 0] /A << /S /URI /URI (https://example.com/page" +
       (i + 1).to_string() +
       ") >> >>\nendobj\n"
     offsets.push(total)

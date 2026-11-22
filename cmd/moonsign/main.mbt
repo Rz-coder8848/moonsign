@@ -484,7 +484,7 @@ fn sign_impl(args : Array[String]) -> Unit raise CliError {
       y1,
       x2,
       y2,
-      lines: [first_line, @pdf.pdf_date_string(signing_time)],
+      lines: [first_line, @pdf.readable_date(signing_time)],
     })
   } else {
     None
